@@ -2,6 +2,7 @@ from shared import *
 
 # ---------- Supabase authentication ----------
 login_required()
+render_sidebar_menu()
 render_account_sidebar()
 
 st.title("🤖 AI Study Plan")
@@ -48,10 +49,10 @@ else:
 
     plan = st.session_state.generated_plan
     if plan:
-        st.subheader(" 產生結果")
+        st.subheader("📋 產生結果")
         st.markdown(plan)
         render_week_calendar(plan, next_week_start)
 
-        if st.button(" 儲存目前計畫", use_container_width=True):
+        if st.button("💾 儲存目前計畫", use_container_width=True):
             save_plan(next_week_start, plan)
             st.success("下週學習計畫已儲存，可以到『我的下週學習日曆』查看。")
