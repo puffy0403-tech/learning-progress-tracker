@@ -5,17 +5,17 @@ if not render_auth():
     st.stop()
 render_account_sidebar()
 
-st.title("📚 Learning Progress Tracker")
-st.caption("把『今天讀了多久』變成可追蹤的數字，並依照目標與紀錄規劃下一週。")
+st.title(" LearnPilot")
+st.caption("一起紀錄及制定讀書計畫吧!")
 
 goals = load_goals()
 logs = load_logs()
 week_logs = current_week_logs(logs)
 
 with st.sidebar:
-    st.header("⚙️ 學習設定")
+    st.header(" 學習設定")
 
-    with st.expander("🎯 設定學習目標", expanded=True):
+    with st.expander(" 設定學習目標", expanded=True):
         goal_subject = st.text_input("科目 / 學習主題", placeholder="例如：英文")
         weekly_hours = st.number_input("每週目標時數", min_value=0.5, max_value=100.0, value=7.0, step=0.5)
         target_score = st.number_input("目標分數（選填）", min_value=0.0, max_value=100.0, value=80.0, step=1.0)
@@ -29,7 +29,7 @@ with st.sidebar:
             else:
                 st.warning("請輸入學習主題")
 
-    with st.expander("📝 記錄今日學習", expanded=True):
+    with st.expander(" 記錄今日學習", expanded=True):
         existing_subjects = goals["subject"].drop_duplicates().tolist() if not goals.empty else []
         log_subject = st.selectbox("學習科目", options=existing_subjects + ["其他"])
         custom_subject = ""
@@ -70,7 +70,7 @@ st.caption(f"本週：{week_start} ～ {week_end}")
 
 left, right = st.columns([1.25, 1])
 with left:
-    st.subheader("📊 每日學習時間")
+    st.subheader(" 每日學習時間")
     if week_logs.empty:
         st.info("目前還沒有本週學習紀錄。")
     else:
@@ -81,7 +81,7 @@ with left:
         st.plotly_chart(fig, use_container_width=True)
 
 with right:
-    st.subheader("📈 各科目進度")
+    st.subheader(" 各科目進度")
     if week_logs.empty:
         st.info("新增紀錄後會顯示各科目學習比例。")
     else:
@@ -92,7 +92,7 @@ with right:
         st.plotly_chart(fig2, use_container_width=True)
 
 st.divider()
-st.subheader("🧭 功能頁面")
+st.subheader(" 功能頁面")
 st.caption("點選下方功能，前往完整的功能頁面。")
 
 r1c1, r1c2 = st.columns(2)
