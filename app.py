@@ -6,8 +6,8 @@ if not render_auth():
 render_sidebar_menu()
 render_account_sidebar()
 
-st.title("📚 Learning Progress Tracker")
-st.caption("把『今天讀了多久』變成可追蹤的數字，並依照目標與紀錄規劃下一週。")
+st.title(" LearnPilot")
+st.caption("一起紀錄及制定讀書計畫吧!!!。")
 
 goals = load_goals()
 logs = load_logs()
