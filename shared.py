@@ -19,7 +19,7 @@ except Exception:
     create_client = None
 
 st.set_page_config(
-    page_title="LearnPilot",
+    page_title="Learning Progress Tracker",
     page_icon="📚",
     layout="wide",
 )
@@ -160,7 +160,7 @@ def render_auth():
         """
         <div style="max-width:650px;margin:3.8rem auto 1.5rem;text-align:center;">
           <div style="font-size:3.2rem;">📚</div>
-          <h1 style="margin:.35rem 0;">LearnPilot</h1>
+          <h1 style="margin:.35rem 0;">Learning Progress Tracker</h1>
           <p style="opacity:.7;">登入或建立帳號，開始記錄自己的學習進度</p>
         </div>
         """,
@@ -176,7 +176,7 @@ def render_auth():
 
     _, center, _ = st.columns([1, 1.3, 1])
     with center:
-        login_tab, signup_tab = st.tabs([" 登入", " 註冊"])
+        login_tab, signup_tab = st.tabs(["🔐 登入", "📝 註冊"])
 
         with login_tab:
             with st.form("supabase_login_form"):
@@ -226,9 +226,34 @@ def render_auth():
 
 def login_required():
     if not is_logged_in():
-        st.warning(" 請先登入。")
+        st.warning("🔐 請先登入。")
         st.page_link("app.py", label="回到登入頁", icon="🔐")
         st.stop()
+
+
+
+def render_sidebar_menu():
+    """自訂左側功能列表，取代 Streamlit 自動產生的 pages 導覽。"""
+    st.markdown(
+        """
+        <style>
+        [data-testid="stSidebarNav"] {
+            display: none;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    with st.sidebar:
+        st.markdown("## 📚 LearnPilot")
+
+        with st.expander("🧭 功能列表", expanded=True):
+            st.page_link("app.py", label="首頁", icon="🏠", use_container_width=True)
+            st.page_link("pages/1_AI_Study_Plan.py", label="AI Study Plan", icon="🤖", use_container_width=True)
+            st.page_link("pages/2_學習紀錄管理.py", label="學習紀錄管理", icon="📝", use_container_width=True)
+            st.page_link("pages/3_本週目標進度.py", label="本週目標進度", icon="🎯", use_container_width=True)
+            st.page_link("pages/4_我的下週學習日曆.py", label="我的下週學習日曆", icon="📅", use_container_width=True)
 
 
 def render_account_sidebar():
@@ -236,7 +261,7 @@ def render_account_sidebar():
         return
     st.sidebar.divider()
     st.sidebar.caption(f"👤 {current_user_label()}")
-    if st.sidebar.button(" 登出", use_container_width=True):
+    if st.sidebar.button("🚪 登出", use_container_width=True):
         sign_out()
         st.rerun()
 
@@ -551,7 +576,7 @@ def parse_plan_calendar(plan_text, start_date):
 def render_week_calendar(plan_text, next_week_start):
     cal = parse_plan_calendar(plan_text, next_week_start)
 
-    st.markdown("###  我的下週學習日曆")
+    st.markdown("### 🗓️ 我的下週學習日曆")
     st.caption(
         f"{next_week_start.strftime('%Y/%m/%d')} ～ "
         f"{(next_week_start + timedelta(days=6)).strftime('%Y/%m/%d')}"
