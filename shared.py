@@ -1,11 +1,9 @@
-
 import os
-import sqlite3
+import re
 from datetime import date, datetime, timedelta
 
 import pandas as pd
 import plotly.express as px
-import re
 import streamlit as st
 
 # Optional Gemini support
@@ -14,8 +12,11 @@ try:
 except Exception:
     genai = None
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, "learning_tracker.db")
+# Supabase
+try:
+    from supabase import create_client
+except Exception:
+    create_client = None
 
 st.set_page_config(
     page_title="Learning Progress Tracker",
@@ -23,232 +24,349 @@ st.set_page_config(
     layout="wide",
 )
 
-# ---------- Database ----------
-def get_conn():
-    return sqlite3.connect(DB_PATH, check_same_thread=False)
 
-def init_db():
-    conn = get_conn()
-    cur = conn.cursor()
-
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS goals (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            subject TEXT NOT NULL,
-            weekly_hours REAL NOT NULL,
-            target_score REAL,
-            target_date TEXT,
-            created_at TEXT NOT NULL
-        )
-    """)
-
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS study_logs (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            study_date TEXT NOT NULL,
-            subject TEXT NOT NULL,
-            minutes INTEGER NOT NULL,
-            note TEXT,
-            created_at TEXT NOT NULL
-        )
-    """)
-
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS plans (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            week_start TEXT NOT NULL,
-            content TEXT NOT NULL,
-            created_at TEXT NOT NULL
-        )
-    """)
-
-    conn.commit()
-    conn.close()
-
-def add_goal(subject, weekly_hours, target_score, target_date):
-    conn = get_conn()
-    conn.execute(
-        """
-        INSERT INTO goals(subject, weekly_hours, target_score, target_date, created_at)
-        VALUES (?, ?, ?, ?, ?)
-        """,
-        (
-            subject,
-            weekly_hours,
-            target_score if target_score is not None else None,
-            str(target_date) if target_date else None,
-            datetime.now().isoformat(timespec="seconds"),
-        ),
-    )
-    conn.commit()
-    conn.close()
-
-def add_log(study_date, subject, minutes, note):
-    conn = get_conn()
-    conn.execute(
-        """
-        INSERT INTO study_logs(study_date, subject, minutes, note, created_at)
-        VALUES (?, ?, ?, ?, ?)
-        """,
-        (
-            str(study_date),
-            subject,
-            int(minutes),
-            note,
-            datetime.now().isoformat(timespec="seconds"),
-        ),
-    )
-    conn.commit()
-    conn.close()
-
-def update_log(log_id, study_date, subject, minutes, note):
-    conn = get_conn()
-    conn.execute(
-        """
-        UPDATE study_logs
-        SET study_date = ?, subject = ?, minutes = ?, note = ?
-        WHERE id = ?
-        """,
-        (str(study_date), subject, int(minutes), note, int(log_id)),
-    )
-    conn.commit()
-    conn.close()
-
-def delete_log(log_id):
-    conn = get_conn()
-    conn.execute("DELETE FROM study_logs WHERE id = ?", (int(log_id),))
-    conn.commit()
-    conn.close()
-
-def save_plan(week_start, content):
-    conn = get_conn()
-    conn.execute(
-        """
-        INSERT INTO plans(week_start, content, created_at)
-        VALUES (?, ?, ?)
-        """,
-        (str(week_start), content, datetime.now().isoformat(timespec="seconds")),
-    )
-    conn.commit()
-    conn.close()
-
-def load_goals():
-    conn = get_conn()
-    df = pd.read_sql_query("SELECT * FROM goals ORDER BY id DESC", conn)
-    conn.close()
-    return df
-
-def load_logs():
-    conn = get_conn()
-    df = pd.read_sql_query("SELECT * FROM study_logs ORDER BY study_date DESC, id DESC", conn)
-    conn.close()
-    return df
-
-def load_latest_plan():
-    conn = get_conn()
-    df = pd.read_sql_query("SELECT * FROM plans ORDER BY id DESC LIMIT 1", conn)
-    conn.close()
-    return None if df.empty else df.iloc[0]["content"]
-
-init_db()
-
-
-# ---------- Login / Authentication ----------
-def _get_login_config():
-    """從 Streamlit Secrets 讀取登入帳號與密碼。"""
+# =========================================================
+# Supabase configuration / authentication
+# =========================================================
+def _secret(name, default=""):
     try:
-        login_cfg = st.secrets.get("login", {})
-        username = str(login_cfg.get("username", "")).strip()
-        password = str(login_cfg.get("password", ""))
-        return username, password
+        value = st.secrets.get(name, default)
+        return str(value).strip() if value is not None else default
     except Exception:
-        return "", ""
+        return str(os.getenv(name, default)).strip()
+
+
+def supabase_configured():
+    return bool(_secret("SUPABASE_URL") and _secret("SUPABASE_KEY") and create_client is not None)
+
+
+def _new_supabase_client():
+    if not supabase_configured():
+        return None
+    return create_client(_secret("SUPABASE_URL"), _secret("SUPABASE_KEY"))
+
+
+def _store_auth_response(response):
+    session = getattr(response, "session", None)
+    user = getattr(response, "user", None)
+
+    if session is not None:
+        st.session_state["sb_access_token"] = session.access_token
+        st.session_state["sb_refresh_token"] = session.refresh_token
+
+    if user is not None:
+        st.session_state["user_id"] = str(user.id)
+        st.session_state["user_email"] = str(user.email or "")
+        metadata = getattr(user, "user_metadata", None) or {}
+        st.session_state["display_name"] = str(metadata.get("display_name", "")).strip()
+
+
+def get_supabase():
+    """Return a Supabase client authenticated as the current Streamlit user."""
+    client = _new_supabase_client()
+    if client is None:
+        return None
+
+    access_token = st.session_state.get("sb_access_token")
+    refresh_token = st.session_state.get("sb_refresh_token")
+
+    if access_token and refresh_token:
+        try:
+            response = client.auth.set_session(access_token, refresh_token)
+            _store_auth_response(response)
+        except Exception:
+            # Token/session is no longer valid.
+            for key in (
+                "sb_access_token", "sb_refresh_token",
+                "user_id", "user_email", "display_name"
+            ):
+                st.session_state.pop(key, None)
+            return _new_supabase_client()
+
+    return client
 
 
 def is_logged_in():
-    return bool(st.session_state.get("logged_in", False))
+    return bool(
+        st.session_state.get("user_id")
+        and st.session_state.get("sb_access_token")
+        and st.session_state.get("sb_refresh_token")
+    )
 
 
-def login_required():
-    """保護功能頁面；未登入時停止執行頁面內容。"""
-    if not is_logged_in():
-        st.warning("🔐 請先登入 Learning Progress Tracker。")
-        st.page_link("app.py", label="前往登入頁面", icon="🔐")
-        st.stop()
+def current_user_id():
+    return str(st.session_state.get("user_id", "")).strip()
 
 
-def render_login():
-    """顯示登入畫面；登入成功回傳 True。"""
+def current_user_label():
+    return (
+        st.session_state.get("display_name")
+        or st.session_state.get("user_email")
+        or "使用者"
+    )
+
+
+def sign_up(email, password, display_name=""):
+    client = _new_supabase_client()
+    if client is None:
+        raise RuntimeError("尚未設定 Supabase。")
+
+    payload = {
+        "email": email.strip(),
+        "password": password,
+    }
+    if display_name.strip():
+        payload["options"] = {"data": {"display_name": display_name.strip()}}
+
+    response = client.auth.sign_up(payload)
+    _store_auth_response(response)
+    return response
+
+
+def sign_in(email, password):
+    client = _new_supabase_client()
+    if client is None:
+        raise RuntimeError("尚未設定 Supabase。")
+
+    response = client.auth.sign_in_with_password(
+        {"email": email.strip(), "password": password}
+    )
+    _store_auth_response(response)
+    return response
+
+
+def sign_out():
+    try:
+        client = get_supabase()
+        if client is not None and is_logged_in():
+            client.auth.sign_out()
+    except Exception:
+        pass
+
+    for key in (
+        "sb_access_token", "sb_refresh_token",
+        "user_id", "user_email", "display_name",
+        "generated_plan"
+    ):
+        st.session_state.pop(key, None)
+
+
+def render_auth():
+    """Login / registration screen. Returns True when logged in."""
     if is_logged_in():
         return True
 
     st.markdown(
         """
-        <div style="max-width:520px;margin:5rem auto 1.5rem auto;text-align:center;">
-            <div style="font-size:3rem;">📚</div>
-            <h1 style="margin-bottom:.35rem;">Learning Progress Tracker</h1>
-            <p style="opacity:.7;">請登入後使用個人學習進度追蹤系統</p>
+        <div style="max-width:650px;margin:3.8rem auto 1.5rem;text-align:center;">
+          <div style="font-size:3.2rem;">📚</div>
+          <h1 style="margin:.35rem 0;">Learning Progress Tracker</h1>
+          <p style="opacity:.7;">登入或建立帳號，開始記錄自己的學習進度</p>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    username_cfg, password_cfg = _get_login_config()
-
-    if not username_cfg or not password_cfg:
-        st.error("尚未設定登入帳號。請先在 Streamlit Cloud 的 Secrets 設定 [login] username 與 password。")
+    if not supabase_configured():
+        st.error(
+            "尚未完成 Supabase 設定。請在 Streamlit Cloud Secrets 加入 "
+            "SUPABASE_URL 與 SUPABASE_KEY。"
+        )
         st.stop()
 
-    _, center, _ = st.columns([1, 1.2, 1])
+    _, center, _ = st.columns([1, 1.3, 1])
     with center:
-        with st.form("login_form"):
-            username = st.text_input("帳號", placeholder="請輸入帳號")
-            password = st.text_input("密碼", type="password", placeholder="請輸入密碼")
-            submitted = st.form_submit_button("🔐 登入", type="primary", use_container_width=True)
+        login_tab, signup_tab = st.tabs(["🔐 登入", "📝 註冊"])
 
-        if submitted:
-            import hmac
-            user_ok = hmac.compare_digest(username.strip(), username_cfg)
-            pass_ok = hmac.compare_digest(password, password_cfg)
-            if user_ok and pass_ok:
-                st.session_state.logged_in = True
-                st.rerun()
-            else:
-                st.error("帳號或密碼錯誤。")
+        with login_tab:
+            with st.form("supabase_login_form"):
+                email = st.text_input("Email", key="login_email", placeholder="name@example.com")
+                password = st.text_input("密碼", type="password", key="login_password")
+                submitted = st.form_submit_button("登入", type="primary", use_container_width=True)
+
+            if submitted:
+                if not email.strip() or not password:
+                    st.warning("請輸入 Email 與密碼。")
+                else:
+                    try:
+                        sign_in(email, password)
+                        st.success("登入成功。")
+                        st.rerun()
+                    except Exception as exc:
+                        st.error(f"登入失敗：{exc}")
+
+        with signup_tab:
+            with st.form("supabase_signup_form"):
+                display_name = st.text_input("顯示名稱（選填）", key="signup_name")
+                email = st.text_input("Email", key="signup_email", placeholder="name@example.com")
+                password = st.text_input("密碼（至少 6 碼）", type="password", key="signup_password")
+                confirm = st.text_input("確認密碼", type="password", key="signup_confirm")
+                submitted = st.form_submit_button("建立帳號", type="primary", use_container_width=True)
+
+            if submitted:
+                if not email.strip():
+                    st.warning("請輸入 Email。")
+                elif len(password) < 6:
+                    st.warning("密碼至少需要 6 個字元。")
+                elif password != confirm:
+                    st.warning("兩次輸入的密碼不一致。")
+                else:
+                    try:
+                        response = sign_up(email, password, display_name)
+                        if getattr(response, "session", None) is not None:
+                            st.success("註冊成功，已自動登入。")
+                            st.rerun()
+                        else:
+                            st.success("註冊成功！請先到 Email 完成驗證，再回來登入。")
+                    except Exception as exc:
+                        st.error(f"註冊失敗：{exc}")
 
     return False
 
 
-def render_logout_button():
-    """在側邊欄顯示目前登入狀態與登出按鈕。"""
+def login_required():
+    if not is_logged_in():
+        st.warning("🔐 請先登入。")
+        st.page_link("app.py", label="回到登入頁", icon="🔐")
+        st.stop()
+
+
+def render_account_sidebar():
     if not is_logged_in():
         return
-
-    username_cfg, _ = _get_login_config()
     st.sidebar.divider()
-    st.sidebar.caption(f"👤 已登入：{username_cfg}")
+    st.sidebar.caption(f"👤 {current_user_label()}")
     if st.sidebar.button("🚪 登出", use_container_width=True):
-        st.session_state.logged_in = False
-        st.session_state.pop("generated_plan", None)
+        sign_out()
         st.rerun()
 
 
-def gemini_api_ready():
-    """同時支援 Streamlit Cloud Secrets 與本機環境變數。"""
-    api_key = ""
-    try:
-        api_key = str(st.secrets.get("GEMINI_API_KEY", "")).strip()
-    except Exception:
-        pass
-    if not api_key:
-        api_key = os.getenv("GEMINI_API_KEY", "").strip()
-    return bool(api_key) and genai is not None
+# =========================================================
+# Supabase database helpers — every row belongs to user_id
+# =========================================================
+def _table(name):
+    client = get_supabase()
+    if client is None or not is_logged_in():
+        raise RuntimeError("尚未登入 Supabase。")
+    return client.table(name)
 
 
-# ---------- Helpers ----------
+def _df(data, columns):
+    if not data:
+        return pd.DataFrame(columns=columns)
+    return pd.DataFrame(data)
+
+
+def add_goal(subject, weekly_hours, target_score, target_date):
+    uid = current_user_id()
+    _table("goals").insert({
+        "user_id": uid,
+        "subject": subject,
+        "weekly_hours": float(weekly_hours),
+        "target_score": float(target_score) if target_score is not None else None,
+        "target_date": str(target_date) if target_date else None,
+    }).execute()
+
+
+def add_log(study_date, subject, minutes, note):
+    uid = current_user_id()
+    _table("study_logs").insert({
+        "user_id": uid,
+        "study_date": str(study_date),
+        "subject": subject,
+        "minutes": int(minutes),
+        "note": note,
+    }).execute()
+
+
+def update_log(log_id, study_date, subject, minutes, note):
+    uid = current_user_id()
+    (
+        _table("study_logs")
+        .update({
+            "study_date": str(study_date),
+            "subject": subject,
+            "minutes": int(minutes),
+            "note": note,
+        })
+        .eq("id", int(log_id))
+        .eq("user_id", uid)
+        .execute()
+    )
+
+
+def delete_log(log_id):
+    uid = current_user_id()
+    (
+        _table("study_logs")
+        .delete()
+        .eq("id", int(log_id))
+        .eq("user_id", uid)
+        .execute()
+    )
+
+
+def save_plan(week_start, content):
+    uid = current_user_id()
+    _table("plans").insert({
+        "user_id": uid,
+        "week_start": str(week_start),
+        "content": content,
+    }).execute()
+
+
+def load_goals():
+    uid = current_user_id()
+    response = (
+        _table("goals")
+        .select("*")
+        .eq("user_id", uid)
+        .order("id", desc=True)
+        .execute()
+    )
+    return _df(
+        response.data,
+        ["id", "user_id", "subject", "weekly_hours", "target_score",
+         "target_date", "created_at"]
+    )
+
+
+def load_logs():
+    uid = current_user_id()
+    response = (
+        _table("study_logs")
+        .select("*")
+        .eq("user_id", uid)
+        .order("study_date", desc=True)
+        .order("id", desc=True)
+        .execute()
+    )
+    return _df(
+        response.data,
+        ["id", "user_id", "study_date", "subject", "minutes", "note", "created_at"]
+    )
+
+
+def load_latest_plan():
+    uid = current_user_id()
+    response = (
+        _table("plans")
+        .select("*")
+        .eq("user_id", uid)
+        .order("id", desc=True)
+        .limit(1)
+        .execute()
+    )
+    return None if not response.data else response.data[0]["content"]
+
+
+# =========================================================
+# Learning helpers
+# =========================================================
 today = date.today()
 week_start = today - timedelta(days=today.weekday())
 week_end = week_start + timedelta(days=6)
+
 
 def current_week_logs(logs):
     if logs.empty:
@@ -256,6 +374,7 @@ def current_week_logs(logs):
     x = logs.copy()
     x["study_date"] = pd.to_datetime(x["study_date"]).dt.date
     return x[(x["study_date"] >= week_start) & (x["study_date"] <= week_end)]
+
 
 def build_rule_based_plan(goals, logs):
     if goals.empty:
@@ -286,25 +405,26 @@ def build_rule_based_plan(goals, logs):
             day_i += 1
         lines.append("")
 
-    lines.append("> 這是依目前目標與本週完成量產生的基本規劃；接上 Gemini API 後可進一步考慮空閒時段與學習內容。")
+    lines.append("> 這是依目前目標與本週完成量產生的基本規劃。")
     return "\n".join(lines)
 
+
+def gemini_api_ready():
+    return bool(_secret("GEMINI_API_KEY") and genai is not None)
+
+
 def build_ai_plan(goals, logs):
-    # Prefer Streamlit Cloud secrets; fall back to local environment variable.
-    api_key = ""
-    try:
-        api_key = str(st.secrets.get("GEMINI_API_KEY", "")).strip()
-    except Exception:
-        pass
-    if not api_key:
-        api_key = os.getenv("GEMINI_API_KEY", "").strip()
+    api_key = _secret("GEMINI_API_KEY")
     if not api_key or genai is None:
         return build_rule_based_plan(goals, logs)
 
     wk = current_week_logs(logs)
     latest_goals = goals.drop_duplicates("subject", keep="first")
 
-    goals_text = latest_goals[["subject", "weekly_hours", "target_score", "target_date"]].to_dict("records")
+    goals_text = latest_goals[
+        ["subject", "weekly_hours", "target_score", "target_date"]
+    ].to_dict("records")
+
     logs_text = (
         wk[["study_date", "subject", "minutes", "note"]].to_dict("records")
         if not wk.empty else []
@@ -342,7 +462,6 @@ def build_ai_plan(goals, logs):
 
 
 def parse_plan_calendar(plan_text, start_date):
-    """把 AI / 規則式文字計畫轉成一週日曆資料。"""
     weekday_map = {
         "週一": 0, "星期一": 0,
         "週二": 1, "星期二": 1,
@@ -369,24 +488,31 @@ def parse_plan_calendar(plan_text, start_date):
         day_index = weekday_map[day_name]
         item_date = start_date + timedelta(days=day_index)
 
-        # 支援 Gemini 建議格式：週一：英文｜1.0 小時｜單字複習
         parts = [p.strip() for p in re.split(r"[｜|]", line) if p.strip()]
-        subject = ""
-        hours = 1.0
-        content = ""
-
         first = parts[0] if parts else line
-        first = re.sub(r"^(週一|週二|週三|週四|週五|週六|週日|星期一|星期二|星期三|星期四|星期五|星期六|星期日|星期天)\s*[：:]\s*", "", first)
+        first = re.sub(
+            r"^(週一|週二|週三|週四|週五|週六|週日|星期一|星期二|星期三|星期四|星期五|星期六|星期日|星期天)\s*[：:]\s*",
+            "",
+            first,
+        )
 
-        hour_match = re.search(r"(\d+(?:\.\d+)?)\s*(?:小時|hr|hrs|hour|hours)", line, re.I)
+        hours = 1.0
+        hour_match = re.search(
+            r"(\d+(?:\.\d+)?)\s*(?:小時|hr|hrs|hour|hours)",
+            line,
+            re.I,
+        )
         if hour_match:
             hours = float(hour_match.group(1))
 
-        # 第一段若含「科目 1.0 小時」，移除時間後當科目
-        subject = re.sub(r"\s*\d+(?:\.\d+)?\s*(?:小時|hr|hrs|hour|hours).*", "", first, flags=re.I).strip()
-        if not subject:
-            subject = "學習"
+        subject = re.sub(
+            r"\s*\d+(?:\.\d+)?\s*(?:小時|hr|hrs|hour|hours).*",
+            "",
+            first,
+            flags=re.I,
+        ).strip() or "學習"
 
+        content = ""
         if len(parts) >= 3:
             content = parts[2]
         elif len(parts) >= 2 and not re.search(r"(小時|hr|hour)", parts[1], re.I):
@@ -394,13 +520,14 @@ def parse_plan_calendar(plan_text, start_date):
 
         rows.append({
             "date": item_date,
-            "weekday": ["週一","週二","週三","週四","週五","週六","週日"][day_index],
+            "weekday": ["週一", "週二", "週三", "週四", "週五", "週六", "週日"][day_index],
             "subject": subject,
             "hours": hours,
             "content": content,
         })
 
     return pd.DataFrame(rows)
+
 
 def render_week_calendar(plan_text, next_week_start):
     cal = parse_plan_calendar(plan_text, next_week_start)
@@ -441,7 +568,10 @@ def render_week_calendar(plan_text, next_week_start):
                 for _, item in day_rows.iterrows():
                     detail = f"{item['hours']:.1f} hr"
                     if item["content"]:
-                        detail += f"<br><span style='font-size:.78rem;opacity:.72'>{item['content']}</span>"
+                        detail += (
+                            f"<br><span style='font-size:.78rem;opacity:.72'>"
+                            f"{item['content']}</span>"
+                        )
 
                     st.markdown(
                         f"""
@@ -461,6 +591,4 @@ def render_week_calendar(plan_text, next_week_start):
                     )
 
     if cal.empty:
-        st.info("目前的 AI 文字計畫中沒有辨識到「週一～週日」的排程。重新產生計畫後會自動顯示在日曆中。")
-
-
+        st.info("目前的 AI 文字計畫中沒有辨識到「週一～週日」的排程。")
