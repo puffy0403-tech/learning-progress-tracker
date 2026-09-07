@@ -19,7 +19,7 @@ except Exception:
     create_client = None
 
 st.set_page_config(
-    page_title="Learning Progress Tracker",
+    page_title="LearnPilot",
     page_icon="📚",
     layout="wide",
 )
