@@ -1,5 +1,9 @@
 from shared import *
 
+# ---------- Login protection ----------
+login_required()
+render_logout_button()
+
 st.title("🗓️ 我的下週學習日曆")
 st.caption("顯示最近一次儲存的下一週學習計畫。")
 st.page_link("app.py", label="回到首頁", icon="🏠")

@@ -1,5 +1,9 @@
 from shared import *
 
+# ---------- Login protection ----------
+login_required()
+render_logout_button()
+
 st.title("🤖 AI Study Plan")
 st.caption("依照學習目標與本週學習紀錄，產生下一週可執行的學習計畫。")
 st.page_link("app.py", label="回到首頁", icon="🏠")
@@ -24,7 +28,7 @@ else:
         hide_index=True,
     )
 
-    api_ready = bool(os.getenv("GEMINI_API_KEY", "").strip()) and genai is not None
+    api_ready = gemini_api_ready()
     if api_ready:
         st.success("已偵測到 Gemini API，將使用 AI 產生計畫。")
     else:

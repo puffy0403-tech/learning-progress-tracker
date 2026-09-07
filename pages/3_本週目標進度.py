@@ -1,5 +1,9 @@
 from shared import *
 
+# ---------- Login protection ----------
+login_required()
+render_logout_button()
+
 st.title("🎯 本週目標進度")
 st.caption(f"本週：{week_start} ～ {week_end}")
 st.page_link("app.py", label="回到首頁", icon="🏠")
