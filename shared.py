@@ -454,11 +454,26 @@ def build_ai_plan(goals, logs):
 """
 
     client = genai.Client(api_key=api_key)
-    response = client.models.generate_content(
-    model="gemini-3.6-flash",
-    contents=prompt,
-)
-    return response.text
+
+models = [
+    "gemini-3.6-flash",
+    "gemini-3.5-flash-lite",
+]
+
+last_error = None
+
+for model_name in models:
+    try:
+        response = client.models.generate_content(
+            model=model_name,
+            contents=prompt,
+        )
+        return response.text
+
+    except Exception as exc:
+        last_error = exc
+
+raise last_error
 
 
 def parse_plan_calendar(plan_text, start_date):
