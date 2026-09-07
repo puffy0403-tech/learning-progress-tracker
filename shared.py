@@ -152,6 +152,99 @@ def load_latest_plan():
 
 init_db()
 
+
+# ---------- Login / Authentication ----------
+def _get_login_config():
+    """從 Streamlit Secrets 讀取登入帳號與密碼。"""
+    try:
+        login_cfg = st.secrets.get("login", {})
+        username = str(login_cfg.get("username", "")).strip()
+        password = str(login_cfg.get("password", ""))
+        return username, password
+    except Exception:
+        return "", ""
+
+
+def is_logged_in():
+    return bool(st.session_state.get("logged_in", False))
+
+
+def login_required():
+    """保護功能頁面；未登入時停止執行頁面內容。"""
+    if not is_logged_in():
+        st.warning("🔐 請先登入 Learning Progress Tracker。")
+        st.page_link("app.py", label="前往登入頁面", icon="🔐")
+        st.stop()
+
+
+def render_login():
+    """顯示登入畫面；登入成功回傳 True。"""
+    if is_logged_in():
+        return True
+
+    st.markdown(
+        """
+        <div style="max-width:520px;margin:5rem auto 1.5rem auto;text-align:center;">
+            <div style="font-size:3rem;">📚</div>
+            <h1 style="margin-bottom:.35rem;">Learning Progress Tracker</h1>
+            <p style="opacity:.7;">請登入後使用個人學習進度追蹤系統</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    username_cfg, password_cfg = _get_login_config()
+
+    if not username_cfg or not password_cfg:
+        st.error("尚未設定登入帳號。請先在 Streamlit Cloud 的 Secrets 設定 [login] username 與 password。")
+        st.stop()
+
+    _, center, _ = st.columns([1, 1.2, 1])
+    with center:
+        with st.form("login_form"):
+            username = st.text_input("帳號", placeholder="請輸入帳號")
+            password = st.text_input("密碼", type="password", placeholder="請輸入密碼")
+            submitted = st.form_submit_button("🔐 登入", type="primary", use_container_width=True)
+
+        if submitted:
+            import hmac
+            user_ok = hmac.compare_digest(username.strip(), username_cfg)
+            pass_ok = hmac.compare_digest(password, password_cfg)
+            if user_ok and pass_ok:
+                st.session_state.logged_in = True
+                st.rerun()
+            else:
+                st.error("帳號或密碼錯誤。")
+
+    return False
+
+
+def render_logout_button():
+    """在側邊欄顯示目前登入狀態與登出按鈕。"""
+    if not is_logged_in():
+        return
+
+    username_cfg, _ = _get_login_config()
+    st.sidebar.divider()
+    st.sidebar.caption(f"👤 已登入：{username_cfg}")
+    if st.sidebar.button("🚪 登出", use_container_width=True):
+        st.session_state.logged_in = False
+        st.session_state.pop("generated_plan", None)
+        st.rerun()
+
+
+def gemini_api_ready():
+    """同時支援 Streamlit Cloud Secrets 與本機環境變數。"""
+    api_key = ""
+    try:
+        api_key = str(st.secrets.get("GEMINI_API_KEY", "")).strip()
+    except Exception:
+        pass
+    if not api_key:
+        api_key = os.getenv("GEMINI_API_KEY", "").strip()
+    return bool(api_key) and genai is not None
+
+
 # ---------- Helpers ----------
 today = date.today()
 week_start = today - timedelta(days=today.weekday())

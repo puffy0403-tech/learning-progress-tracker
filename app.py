@@ -1,5 +1,10 @@
 from shared import *
 
+# ---------- Login ----------
+if not render_login():
+    st.stop()
+render_logout_button()
+
 st.title("📚 Learning Progress Tracker")
 st.caption("把『今天讀了多久』變成可追蹤的數字，並依照目標與紀錄規劃下一週。")
 
