@@ -455,25 +455,29 @@ def build_ai_plan(goals, logs):
 
     client = genai.Client(api_key=api_key)
 
-models = [
-    "gemini-3.6-flash",
-    "gemini-3.5-flash-lite",
-]
+    # Gemini 模型自動備援：
+    # 1) 優先使用 gemini-3.6-flash
+    # 2) 若遇到 503 / 高流量 / 暫時不可用，再改用 gemini-3.5-flash-lite
+    model_candidates = [
+        "gemini-3.6-flash",
+        "gemini-3.5-flash-lite",
+    ]
 
-last_error = None
+    last_error = None
 
-for model_name in models:
-    try:
-        response = client.models.generate_content(
-            model=model_name,
-            contents=prompt,
-        )
-        return response.text
+    for model_name in model_candidates:
+        try:
+            response = client.models.generate_content(
+                model=model_name,
+                contents=prompt,
+            )
+            return response.text
+        except Exception as exc:
+            last_error = exc
 
-    except Exception as exc:
-        last_error = exc
-
-raise last_error
+    # 兩個 Gemini 模型都失敗時，交給外層頁面既有的 fallback
+    # 顯示錯誤後改用規則式方法產生計畫。
+    raise last_error
 
 
 def parse_plan_calendar(plan_text, start_date):
