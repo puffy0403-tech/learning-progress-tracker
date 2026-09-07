@@ -1,8 +1,8 @@
 from shared import *
 
-# ---------- Login protection ----------
+# ---------- Supabase authentication ----------
 login_required()
-render_logout_button()
+render_account_sidebar()
 
 st.title("🤖 AI Study Plan")
 st.caption("依照學習目標與本週學習紀錄，產生下一週可執行的學習計畫。")

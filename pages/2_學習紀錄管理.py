@@ -1,8 +1,8 @@
 from shared import *
 
-# ---------- Login protection ----------
+# ---------- Supabase authentication ----------
 login_required()
-render_logout_button()
+render_account_sidebar()
 
 st.title("📝 學習紀錄管理")
 st.caption("查看、修改或刪除已建立的學習紀錄。")

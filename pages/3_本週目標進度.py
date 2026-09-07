@@ -1,8 +1,8 @@
 from shared import *
 
-# ---------- Login protection ----------
+# ---------- Supabase authentication ----------
 login_required()
-render_logout_button()
+render_account_sidebar()
 
 st.title("🎯 本週目標進度")
 st.caption(f"本週：{week_start} ～ {week_end}")

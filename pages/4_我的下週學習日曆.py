@@ -1,8 +1,8 @@
 from shared import *
 
-# ---------- Login protection ----------
+# ---------- Supabase authentication ----------
 login_required()
-render_logout_button()
+render_account_sidebar()
 
 st.title("🗓️ 我的下週學習日曆")
 st.caption("顯示最近一次儲存的下一週學習計畫。")
