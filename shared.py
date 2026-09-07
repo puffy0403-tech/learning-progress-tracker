@@ -160,7 +160,7 @@ def render_auth():
         """
         <div style="max-width:650px;margin:3.8rem auto 1.5rem;text-align:center;">
           <div style="font-size:3.2rem;">📚</div>
-          <h1 style="margin:.35rem 0;">Learning Progress Tracker</h1>
+          <h1 style="margin:.35rem 0;">LearnPilot</h1>
           <p style="opacity:.7;">登入或建立帳號，開始記錄自己的學習進度</p>
         </div>
         """,
