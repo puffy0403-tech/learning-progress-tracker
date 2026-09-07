@@ -7,7 +7,7 @@ render_sidebar_menu()
 render_account_sidebar()
 
 st.title(" LearnPilot")
-st.caption("一起紀錄及制定讀書計畫吧!!!。")
+st.caption("一起紀錄及制定讀書計畫吧!!!")
 
 goals = load_goals()
 logs = load_logs()
