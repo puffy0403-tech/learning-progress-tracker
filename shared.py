@@ -328,7 +328,7 @@ def render_sidebar_menu():
             )
             with home_icon_col:
                 if os.path.exists(home_icon):
-                    st.image(home_icon, width=28)
+                    st.image(home_icon, width=36)
             with home_link_col:
                 st.page_link(
                     "app.py",
@@ -352,7 +352,7 @@ def render_sidebar_menu():
                 )
                 with icon_col:
                     if os.path.exists(icon_path):
-                        st.image(icon_path, width=28)
+                        st.image(icon_path, width=36)
                 with link_col:
                     st.page_link(
                         page_path,
