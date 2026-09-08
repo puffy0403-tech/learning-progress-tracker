@@ -5,6 +5,7 @@ from datetime import date, datetime, timedelta
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+from PIL import Image
 
 # Optional Gemini support
 try:
@@ -18,9 +19,19 @@ try:
 except Exception:
     create_client = None
 
+_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+_LOGO_ICON_PATH = os.path.join(_BASE_DIR, "assets", "learnpilot_icon.png")
+
+_page_icon = "🤖"
+if os.path.exists(_LOGO_ICON_PATH):
+    try:
+        _page_icon = Image.open(_LOGO_ICON_PATH)
+    except Exception:
+        pass
+
 st.set_page_config(
-    page_title="Learning Progress Tracker",
-    page_icon="📚",
+    page_title="LearnPilot",
+    page_icon=_page_icon,
     layout="wide",
 )
 
@@ -152,14 +163,18 @@ def sign_out():
 
 
 def render_brand_header(subtitle=""):
-    """顯示 LearnPilot Logo + 系統名稱，可在首頁與各功能頁重複使用。"""
-    logo_path = os.path.join(os.path.dirname(__file__), "assets", "learnpilot_logo.png")
-    left, right = st.columns([0.9, 5.1], vertical_alignment="center")
-    with left:
-        if os.path.exists(logo_path):
-            st.image(logo_path, width=105)
-    with right:
-        st.markdown("# LearnPilot")
+    """顯示 LearnPilot 圖示 + 系統名稱，可在首頁與各功能頁重複使用。"""
+    icon_path = os.path.join(os.path.dirname(__file__), "assets", "learnpilot_icon.png")
+
+    brand_col1, brand_col2 = st.columns([0.55, 5.45], vertical_alignment="center")
+    with brand_col1:
+        if os.path.exists(icon_path):
+            st.image(icon_path, width=78)
+    with brand_col2:
+        st.markdown(
+            "<h1 style='margin:0; padding:0;'>LearnPilot</h1>",
+            unsafe_allow_html=True,
+        )
         if subtitle:
             st.caption(subtitle)
 
@@ -168,14 +183,25 @@ def render_auth():
     """Login / registration screen. Returns True when logged in."""
     if is_logged_in():
         return True
+    icon_path = os.path.join(os.path.dirname(__file__), "assets", "learnpilot_icon.png")
+    _, auth_brand, _ = st.columns([1.15, 1.7, 1.15])
+    with auth_brand:
+        logo_col, name_col = st.columns([0.75, 2.25], vertical_alignment="center")
+        with logo_col:
+            if os.path.exists(icon_path):
+                st.image(icon_path, width=88)
+        with name_col:
+            st.markdown(
+                "<h1 style='margin:0; padding:0;'>LearnPilot</h1>",
+                unsafe_allow_html=True,
+            )
 
-    logo_path = os.path.join(os.path.dirname(__file__), "assets", "learnpilot_logo.png")
-    _, brand_center, _ = st.columns([1.4, 1, 1.4])
-    with brand_center:
-        if os.path.exists(logo_path):
-            st.image(logo_path, width=180)
-    st.markdown("<h1 style='text-align:center;margin-top:-.6rem;'>LearnPilot</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align:center;opacity:.7;'>登入或建立帳號，開始記錄自己的學習進度</p>", unsafe_allow_html=True)
+    st.markdown(
+        "<p style='text-align:center;opacity:.7;margin-top:.35rem;'>"
+        "登入或建立帳號，開始記錄自己的學習進度"
+        "</p>",
+        unsafe_allow_html=True,
+    )
 
     if not supabase_configured():
         st.error(
@@ -256,13 +282,16 @@ def render_sidebar_menu():
     )
 
     with st.sidebar:
-        sidebar_logo = os.path.join(os.path.dirname(__file__), "assets", "learnpilot_logo.png")
-        brand_col1, brand_col2 = st.columns([1, 2.2], vertical_alignment="center")
+        sidebar_icon = os.path.join(os.path.dirname(__file__), "assets", "learnpilot_icon.png")
+        brand_col1, brand_col2 = st.columns([0.7, 2.3], vertical_alignment="center")
         with brand_col1:
-            if os.path.exists(sidebar_logo):
-                st.image(sidebar_logo, width=64)
+            if os.path.exists(sidebar_icon):
+                st.image(sidebar_icon, width=56)
         with brand_col2:
-            st.markdown("### LearnPilot")
+            st.markdown(
+                "<h3 style='margin:0; padding:0;'>LearnPilot</h3>",
+                unsafe_allow_html=True,
+            )
 
         with st.expander("🧭 功能列表", expanded=True):
             st.page_link("app.py", label="首頁", icon="🏠", use_container_width=True)
