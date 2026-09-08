@@ -163,6 +163,28 @@ def sign_out():
 
 
 
+
+def render_feature_menu():
+    """側邊欄功能列表：每個功能以圖片 + 名稱呈現，點擊後切換頁面。"""
+    st.sidebar.markdown("### 功能列表")
+
+    menu_items = [
+        ("AI Study Plan", "assets/ai_plan.png", "pages/1_AI_Study_Plan.py"),
+        ("學習紀錄管理", "assets/study_record.png", "pages/2_學習紀錄管理.py"),
+        ("本週目標進度", "assets/progress.png", "pages/3_本週目標進度.py"),
+        ("我的下週學習日曆", "assets/calendar.png", "pages/4_我的下週學習日曆.py"),
+    ]
+
+    for label, icon_rel, page in menu_items:
+        icon_path = os.path.join(os.path.dirname(__file__), icon_rel)
+        c1, c2 = st.sidebar.columns([0.18, 0.82], vertical_alignment="center")
+        with c1:
+            if os.path.exists(icon_path):
+                st.image(icon_path, width=30)
+        with c2:
+            st.page_link(page, label=label, use_container_width=True)
+
+
 def render_feature_title(title, icon_filename, caption=None, icon_width=58):
     """顯示功能頁標題：左側圖片 + 右側標題。"""
     icon_path = os.path.join(os.path.dirname(__file__), "assets", icon_filename)

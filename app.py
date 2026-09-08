@@ -5,6 +5,7 @@ if not render_auth():
     st.stop()
 render_sidebar_menu()
 render_account_sidebar()
+render_feature_menu()
 
 render_brand_header("一起紀錄及制定讀書計畫吧!!!")
 
@@ -97,16 +98,12 @@ st.caption("點選下方功能，前往完整的功能頁面。")
 
 r1c1, r1c2 = st.columns(2)
 with r1c1:
-    st.page_link("pages/1_AI_Study_Plan.py", label="AI Study Plan", icon="🤖", use_container_width=True)
     st.caption("依目標與本週進度產生下一週學習計畫。")
 with r1c2:
-    st.page_link("pages/2_學習紀錄管理.py", label="學習紀錄管理", icon="📝", use_container_width=True)
     st.caption("查看、修改與刪除學習紀錄。")
 
 r2c1, r2c2 = st.columns(2)
 with r2c1:
-    st.page_link("pages/3_本週目標進度.py", label="本週目標進度", icon="🎯", use_container_width=True)
     st.caption("查看各科目本週目標、達成率與剩餘時數。")
 with r2c2:
-    st.page_link("pages/4_我的下週學習日曆.py", label="我的下週學習日曆", icon="🗓️", use_container_width=True)
     st.caption("用週一到週日的日曆查看已儲存的下週計畫。")
