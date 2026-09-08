@@ -318,13 +318,23 @@ def render_sidebar_menu():
             )
 
         # 圖片式功能列表
-        with st.expander("🧭 功能列表", expanded=True):
-            st.page_link(
-                "app.py",
-                label="首頁",
-                icon="🏠",
-                use_container_width=True,
+        with st.expander(" 功能列表", expanded=True):
+            # 首頁：使用 assets/app.png 作為功能列表圖片
+            home_icon = os.path.join(
+                os.path.dirname(__file__), "assets", "app.png"
             )
+            home_icon_col, home_link_col = st.columns(
+                [0.18, 0.82], vertical_alignment="center"
+            )
+            with home_icon_col:
+                if os.path.exists(home_icon):
+                    st.image(home_icon, width=30)
+            with home_link_col:
+                st.page_link(
+                    "app.py",
+                    label="首頁",
+                    use_container_width=True,
+                )
 
             menu_items = [
                 ("AI Study Plan", "ai_plan.png", "pages/1_AI_Study_Plan.py"),
