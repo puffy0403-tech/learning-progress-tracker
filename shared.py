@@ -162,6 +162,23 @@ def sign_out():
         st.session_state.pop(key, None)
 
 
+
+def render_feature_title(title, icon_filename, caption=None, icon_width=58):
+    """顯示功能頁標題：左側圖片 + 右側標題。"""
+    icon_path = os.path.join(os.path.dirname(__file__), "assets", icon_filename)
+    icon_col, title_col = st.columns([0.55, 8.45], vertical_alignment="center")
+    with icon_col:
+        if os.path.exists(icon_path):
+            st.image(icon_path, width=icon_width)
+    with title_col:
+        st.markdown(
+            f"<h1 style='margin:0; padding:0;'>{title}</h1>",
+            unsafe_allow_html=True,
+        )
+        if caption:
+            st.caption(caption)
+
+
 def render_brand_header(subtitle=""):
     """顯示 LearnPilot 圖示 + 系統名稱，可在首頁與各功能頁重複使用。"""
     icon_path = os.path.join(os.path.dirname(__file__), "assets", "learnpilot_icon.png")

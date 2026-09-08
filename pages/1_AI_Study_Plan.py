@@ -6,8 +6,7 @@ render_sidebar_menu()
 render_account_sidebar()
 
 render_brand_header()
-st.title(" AI Study Plan")
-st.caption("依照學習目標與本週學習紀錄，產生下一週可執行的學習計畫。")
+render_feature_title("AI Study Plan", "ai_plan.png", "依照學習目標與本週學習紀錄，產生下一週可執行的學習計畫。")
 st.page_link("app.py", label="回到首頁", icon="🏠")
 
 goals = load_goals()
