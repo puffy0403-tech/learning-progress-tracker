@@ -6,7 +6,7 @@ render_sidebar_menu()
 render_account_sidebar()
 
 render_brand_header()
-st.title("🤖 AI Study Plan")
+st.title(" AI Study Plan")
 st.caption("依照學習目標與本週學習紀錄，產生下一週可執行的學習計畫。")
 st.page_link("app.py", label="回到首頁", icon="🏠")
 
@@ -39,7 +39,7 @@ else:
     if "generated_plan" not in st.session_state:
         st.session_state.generated_plan = ""
 
-    if st.button("✨ 產生下週學習計畫", type="primary", use_container_width=True):
+    if st.button(" 產生下週學習計畫", type="primary", use_container_width=True):
         with st.spinner("正在產生學習計畫..."):
             try:
                 st.session_state.generated_plan = build_ai_plan(goals, logs)
@@ -50,10 +50,10 @@ else:
 
     plan = st.session_state.generated_plan
     if plan:
-        st.subheader("📋 產生結果")
+        st.subheader(" 產生結果")
         st.markdown(plan)
         render_week_calendar(plan, next_week_start)
 
-        if st.button("💾 儲存目前計畫", use_container_width=True):
+        if st.button(" 儲存目前計畫", use_container_width=True):
             save_plan(next_week_start, plan)
             st.success("下週學習計畫已儲存，可以到『我的下週學習日曆』查看。")

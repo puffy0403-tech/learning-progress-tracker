@@ -7,7 +7,7 @@ render_account_sidebar()
 
 render_brand_header()
 
-st.title("🎯 本週目標進度")
+st.title(" 本週目標進度")
 st.caption(f"本週：{week_start} ～ {week_end}")
 st.page_link("app.py", label="回到首頁", icon="🏠")
 
@@ -28,7 +28,7 @@ c3.metric("目標達成率", f"{goal_rate:.0f}%")
 c4.metric("剩餘時數", f"{remaining_total:.1f} 小時")
 st.progress(min(goal_rate / 100, 1.0))
 
-st.subheader("📊 各科目目標進度")
+st.subheader(" 各科目目標進度")
 if latest_goals.empty:
     st.info("目前尚未設定學習目標，請回首頁新增學習目標。")
 else:
