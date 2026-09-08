@@ -5,8 +5,6 @@ if not render_auth():
     st.stop()
 render_sidebar_menu()
 render_account_sidebar()
-render_feature_menu()
-
 render_brand_header("一起紀錄及制定讀書計畫吧!!!")
 
 goals = load_goals()

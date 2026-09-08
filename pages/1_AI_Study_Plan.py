@@ -4,8 +4,6 @@ from shared import *
 login_required()
 render_sidebar_menu()
 render_account_sidebar()
-render_feature_menu()
-
 render_brand_header()
 render_feature_title("AI Study Plan", "ai_plan.png", "依照學習目標與本週學習紀錄，產生下一週可執行的學習計畫。")
 st.page_link("app.py", label="回到首頁", icon="🏠")

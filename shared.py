@@ -164,26 +164,6 @@ def sign_out():
 
 
 
-def render_feature_menu():
-    """側邊欄功能列表：每個功能以圖片 + 名稱呈現，點擊後切換頁面。"""
-    st.sidebar.markdown("### 功能列表")
-
-    menu_items = [
-        ("AI Study Plan", "assets/ai_plan.png", "pages/1_AI_Study_Plan.py"),
-        ("學習紀錄管理", "assets/study_record.png", "pages/2_學習紀錄管理.py"),
-        ("本週目標進度", "assets/progress.png", "pages/3_本週目標進度.py"),
-        ("我的下週學習日曆", "assets/calendar.png", "pages/4_我的下週學習日曆.py"),
-    ]
-
-    for label, icon_rel, page in menu_items:
-        icon_path = os.path.join(os.path.dirname(__file__), icon_rel)
-        c1, c2 = st.sidebar.columns([0.18, 0.82], vertical_alignment="center")
-        with c1:
-            if os.path.exists(icon_path):
-                st.image(icon_path, width=30)
-        with c2:
-            st.page_link(page, label=label, use_container_width=True)
-
 
 def render_feature_title(title, icon_filename, caption=None, icon_width=58):
     """顯示功能頁標題：左側圖片 + 右側標題。"""
@@ -308,7 +288,7 @@ def login_required():
 
 
 def render_sidebar_menu():
-    """自訂左側功能列表，取代 Streamlit 自動產生的 pages 導覽。"""
+    """自訂左側功能列表：LearnPilot 品牌 + 圖片式功能選單。"""
     st.markdown(
         """
         <style>
@@ -321,8 +301,13 @@ def render_sidebar_menu():
     )
 
     with st.sidebar:
-        sidebar_icon = os.path.join(os.path.dirname(__file__), "assets", "learnpilot_icon.png")
-        brand_col1, brand_col2 = st.columns([0.7, 2.3], vertical_alignment="center")
+        # LearnPilot 品牌
+        sidebar_icon = os.path.join(
+            os.path.dirname(__file__), "assets", "learnpilot_icon.png"
+        )
+        brand_col1, brand_col2 = st.columns(
+            [0.7, 2.3], vertical_alignment="center"
+        )
         with brand_col1:
             if os.path.exists(sidebar_icon):
                 st.image(sidebar_icon, width=56)
@@ -332,12 +317,38 @@ def render_sidebar_menu():
                 unsafe_allow_html=True,
             )
 
-        with st.expander(" 功能列表", expanded=True):
-            st.page_link("app.py", label="首頁", icon="🏠", use_container_width=True)
-            st.page_link("pages/1_AI_Study_Plan.py", label="AI Study Plan", icon="🤖", use_container_width=True)
-            st.page_link("pages/2_學習紀錄管理.py", label="學習紀錄管理", icon="📝", use_container_width=True)
-            st.page_link("pages/3_本週目標進度.py", label="本週目標進度", icon="🎯", use_container_width=True)
-            st.page_link("pages/4_我的下週學習日曆.py", label="我的下週學習日曆", icon="📅", use_container_width=True)
+        # 圖片式功能列表
+        with st.expander("🧭 功能列表", expanded=True):
+            st.page_link(
+                "app.py",
+                label="首頁",
+                icon="🏠",
+                use_container_width=True,
+            )
+
+            menu_items = [
+                ("AI Study Plan", "ai_plan.png", "pages/1_AI_Study_Plan.py"),
+                ("學習紀錄管理", "study_record.png", "pages/2_學習紀錄管理.py"),
+                ("本週目標進度", "progress.png", "pages/3_本週目標進度.py"),
+                ("我的下週學習日曆", "calendar.png", "pages/4_我的下週學習日曆.py"),
+            ]
+
+            for label, icon_file, page_path in menu_items:
+                icon_path = os.path.join(
+                    os.path.dirname(__file__), "assets", icon_file
+                )
+                icon_col, link_col = st.columns(
+                    [0.18, 0.82], vertical_alignment="center"
+                )
+                with icon_col:
+                    if os.path.exists(icon_path):
+                        st.image(icon_path, width=30)
+                with link_col:
+                    st.page_link(
+                        page_path,
+                        label=label,
+                        use_container_width=True,
+                    )
 
 
 def render_account_sidebar():

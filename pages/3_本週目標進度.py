@@ -4,8 +4,6 @@ from shared import *
 login_required()
 render_sidebar_menu()
 render_account_sidebar()
-render_feature_menu()
-
 render_brand_header()
 render_feature_title("本週目標進度", "progress.png")
 st.caption(f"本週：{week_start} ～ {week_end}")
