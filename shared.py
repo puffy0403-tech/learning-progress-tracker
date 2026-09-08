@@ -741,3 +741,11 @@ def render_week_calendar(plan_text, next_week_start):
 
     if cal.empty:
         st.info("目前的 AI 文字計畫中沒有辨識到「週一～週日」的排程。")
+
+
+def render_home_link():
+    icon_col, link_col = st.columns([0.6, 9.4], vertical_alignment="center")
+    with icon_col:
+        st.image(os.path.join(_BASE_DIR, "assets", "app.png"), width=36)
+    with link_col:
+        st.page_link("app.py", label="回到首頁")

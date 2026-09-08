@@ -6,7 +6,7 @@ render_sidebar_menu()
 render_account_sidebar()
 render_brand_header()
 render_feature_title("學習紀錄管理", "study_record.png", "查看、修改或刪除已建立的學習紀錄。")
-st.page_link("app.py", label="回到首頁", icon="🏠")
+render_home_link()
 
 logs = load_logs()
 
