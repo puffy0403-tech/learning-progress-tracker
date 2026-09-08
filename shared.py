@@ -151,21 +151,31 @@ def sign_out():
         st.session_state.pop(key, None)
 
 
+def render_brand_header(subtitle=""):
+    """顯示 LearnPilot Logo + 系統名稱，可在首頁與各功能頁重複使用。"""
+    logo_path = os.path.join(os.path.dirname(__file__), "assets", "learnpilot_logo.png")
+    left, right = st.columns([0.9, 5.1], vertical_alignment="center")
+    with left:
+        if os.path.exists(logo_path):
+            st.image(logo_path, width=105)
+    with right:
+        st.markdown("# LearnPilot")
+        if subtitle:
+            st.caption(subtitle)
+
+
 def render_auth():
     """Login / registration screen. Returns True when logged in."""
     if is_logged_in():
         return True
 
-    st.markdown(
-        """
-        <div style="max-width:650px;margin:3.8rem auto 1.5rem;text-align:center;">
-          <div style="font-size:3.2rem;">📚</div>
-          <h1 style="margin:.35rem 0;">Learning Progress Tracker</h1>
-          <p style="opacity:.7;">登入或建立帳號，開始記錄自己的學習進度</p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    logo_path = os.path.join(os.path.dirname(__file__), "assets", "learnpilot_logo.png")
+    _, brand_center, _ = st.columns([1.4, 1, 1.4])
+    with brand_center:
+        if os.path.exists(logo_path):
+            st.image(logo_path, width=180)
+    st.markdown("<h1 style='text-align:center;margin-top:-.6rem;'>LearnPilot</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align:center;opacity:.7;'>登入或建立帳號，開始記錄自己的學習進度</p>", unsafe_allow_html=True)
 
     if not supabase_configured():
         st.error(
@@ -246,7 +256,13 @@ def render_sidebar_menu():
     )
 
     with st.sidebar:
-        st.markdown("## 📚 LearnPilot")
+        sidebar_logo = os.path.join(os.path.dirname(__file__), "assets", "learnpilot_logo.png")
+        brand_col1, brand_col2 = st.columns([1, 2.2], vertical_alignment="center")
+        with brand_col1:
+            if os.path.exists(sidebar_logo):
+                st.image(sidebar_logo, width=64)
+        with brand_col2:
+            st.markdown("### LearnPilot")
 
         with st.expander("🧭 功能列表", expanded=True):
             st.page_link("app.py", label="首頁", icon="🏠", use_container_width=True)
