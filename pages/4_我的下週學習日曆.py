@@ -5,6 +5,8 @@ login_required()
 render_sidebar_menu()
 render_account_sidebar()
 
+render_brand_header()
+
 st.title("🗓️ 我的下週學習日曆")
 st.caption("顯示最近一次儲存的下一週學習計畫。")
 st.page_link("app.py", label="回到首頁", icon="🏠")

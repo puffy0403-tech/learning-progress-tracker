@@ -5,6 +5,8 @@ login_required()
 render_sidebar_menu()
 render_account_sidebar()
 
+render_brand_header()
+
 st.title("🎯 本週目標進度")
 st.caption(f"本週：{week_start} ～ {week_end}")
 st.page_link("app.py", label="回到首頁", icon="🏠")
