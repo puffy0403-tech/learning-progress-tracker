@@ -212,7 +212,7 @@ def render_auth():
 
     _, center, _ = st.columns([1, 1.3, 1])
     with center:
-        login_tab, signup_tab = st.tabs(["🔐 登入", "📝 註冊"])
+        login_tab, signup_tab = st.tabs([" 登入", " 註冊"])
 
         with login_tab:
             with st.form("supabase_login_form"):
@@ -293,7 +293,7 @@ def render_sidebar_menu():
                 unsafe_allow_html=True,
             )
 
-        with st.expander("🧭 功能列表", expanded=True):
+        with st.expander(" 功能列表", expanded=True):
             st.page_link("app.py", label="首頁", icon="🏠", use_container_width=True)
             st.page_link("pages/1_AI_Study_Plan.py", label="AI Study Plan", icon="🤖", use_container_width=True)
             st.page_link("pages/2_學習紀錄管理.py", label="學習紀錄管理", icon="📝", use_container_width=True)
@@ -306,7 +306,7 @@ def render_account_sidebar():
         return
     st.sidebar.divider()
     st.sidebar.caption(f"👤 {current_user_label()}")
-    if st.sidebar.button("🚪 登出", use_container_width=True):
+    if st.sidebar.button(" 登出", use_container_width=True):
         sign_out()
         st.rerun()
 
@@ -621,7 +621,7 @@ def parse_plan_calendar(plan_text, start_date):
 def render_week_calendar(plan_text, next_week_start):
     cal = parse_plan_calendar(plan_text, next_week_start)
 
-    st.markdown("### 🗓️ 我的下週學習日曆")
+    st.markdown("###  我的下週學習日曆")
     st.caption(
         f"{next_week_start.strftime('%Y/%m/%d')} ～ "
         f"{(next_week_start + timedelta(days=6)).strftime('%Y/%m/%d')}"
