@@ -289,7 +289,7 @@ def render_auth():
 
 def login_required():
     if not is_logged_in():
-        st.warning("🔐 請先登入。")
+        st.warning(" 請先登入。")
         st.page_link("app.py", label="回到登入頁", icon="🔐")
         st.stop()
 
