@@ -1089,7 +1089,44 @@ def render_responsive_styles():
     @media (max-width: 640px) {
         .st-key-desktop_calendar {display:none !important;}
         .lp-mobile-calendar {display:block;}
-        .stMainBlockContainer {padding-left:1rem !important;padding-right:1rem !important;}
+        .stMainBlockContainer {
+            padding-left:1rem !important;padding-right:1rem !important;
+            padding-top:4rem !important;
+        }
+        /* Keep only icon/text rows horizontal; leave data columns responsive. */
+        [data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"]:first-child [data-testid="stImage"]) {
+            flex-direction:row !important;
+            flex-wrap:nowrap !important;
+            align-items:center !important;
+            gap:0.6rem !important;
+        }
+        [data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"]:first-child [data-testid="stImage"]) > [data-testid="stColumn"]:first-child {
+            flex:0 0 44px !important;
+            width:44px !important;
+            min-width:44px !important;
+        }
+        [data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"]:first-child [data-testid="stImage"]) > [data-testid="stColumn"]:nth-child(2) {
+            flex:1 1 0 !important;
+            width:auto !important;
+            min-width:0 !important;
+        }
+        [data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"]:first-child [data-testid="stImage"]) [data-testid="stImage"] {
+            width:100% !important;
+        }
+        [data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"]:first-child [data-testid="stImage"]) [data-testid="stImage"] img {
+            max-width:100% !important;
+            max-height:48px !important;
+            object-fit:contain;
+        }
+        [data-testid="stSidebar"] [data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"]:first-child [data-testid="stImage"]) > [data-testid="stColumn"]:first-child {
+            flex:0 0 28px !important;
+            width:28px !important;
+            min-width:28px !important;
+        }
+        [data-testid="stSidebar"] [data-testid="stPageLink"] a {
+            white-space:normal !important;
+            overflow-wrap:anywhere;
+        }
         h1 {font-size:1.8rem !important;overflow-wrap:anywhere;}
         h2 {font-size:1.5rem !important;}
         h3 {font-size:1.2rem !important;}
