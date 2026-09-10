@@ -375,7 +375,7 @@ def render_sidebar_menu():
                                 )
                     elif label == "學習紀錄管理":
                         with st.expander("學習紀錄管理", expanded=False):
-                            for section in ("設定學習目標", "紀錄今日學習", "全部學習紀錄+編輯紀錄"):
+                            for section in ("設定學習目標", "紀錄今日學習", "查看學習紀錄/編輯"):
                                 st.button(
                                     section, key="records_menu_" + section,
                                     use_container_width=True,
@@ -915,7 +915,7 @@ def render_home_plan():
         return
     if not plans:
         st.info(f"{start} ～ {start + timedelta(days=6)} 尚未儲存學習計畫。")
-        st.page_link("pages/1_AI_Study_Plan.py", label="手動建立 / AI 制定讀書計畫", icon="📅")
+        render_ai_plan_dropdown("home_ai_entry")
         return
     ids = [r["id"] for r in plans]
     preferred = st.session_state.get("plan_draft_home_" + current_user_id())
@@ -1009,3 +1009,11 @@ def select_records_section(choice):
     if choice in ("設定學習目標", "紀錄今日學習", "查看學習紀錄/編輯"):
         st.session_state["plan_draft_records_section_" + current_user_id()] = choice
         st.switch_page("pages/2_學習紀錄管理.py")
+
+def render_ai_plan_dropdown(key):
+    """AI creation entry point with separate keys for body and sidebar."""
+    with st.expander("AI Study Plan", expanded=False):
+        for section in ("手動建立讀書計畫", "AI建立讀書計畫"):
+            st.button(section, key=key + "_" + section,
+                      use_container_width=True,
+                      on_click=select_ai_section, args=(section,))

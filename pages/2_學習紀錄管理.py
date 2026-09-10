@@ -8,7 +8,7 @@ render_brand_header()
 render_feature_title('學習紀錄管理', 'study_record.png', daily_encouragement())
 st.page_link("app.py", label="回到首頁", icon="🏠")
 
-section = st.session_state.get("plan_draft_records_section_" + current_user_id(), "全部學習紀錄+編輯紀錄")
+section = st.session_state.get("plan_draft_records_section_" + current_user_id(), "查看學習紀錄/編輯")
 if section in ("設定學習目標", "紀錄今日學習"):
     st.subheader(section)
     render_learning_settings(load_goals(), "records", section=section, sidebar=False)

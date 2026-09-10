@@ -28,4 +28,4 @@ if plans:
         render_plan_editor(record["content"], saved_start, f"saved_{selected_id}_{revision}", record)
 else:
     st.info("尚未儲存計畫。可直接手動建立，或使用 AI 產生後編輯。")
-st.page_link("pages/1_AI_Study_Plan.py", label="手動建立 / 產生 AI 讀書計畫", icon="🤖")
+render_ai_plan_dropdown("calendar_ai_entry")
