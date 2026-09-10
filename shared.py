@@ -857,7 +857,7 @@ def render_plan_editor(text, start, key, record=None):
         try:
             new_start, content = serialize_editable_plan(edited.to_dict("records"), edited_notes)
             if record:
-                update_plan(record["id"], new_start, content, record["content"])
+                saved = update_plan(record["id"], new_start, content, record["content"])
             else:
                 # Repeated submission of the same draft updates its saved row.
                 saved = st.session_state.get(key+"_saved")
@@ -866,8 +866,42 @@ def render_plan_editor(text, start, key, record=None):
                 else:
                     saved = save_plan(new_start, content)
                 st.session_state[key+"_saved"] = saved
-            st.success("計畫已儲存。可到『我的下週學習日曆』查看與再次編輯。")
+            st.session_state["plan_draft_home_" + current_user_id()] = saved["id"]
+            st.success("計畫已儲存。回到首頁即可看到更新，也可到『我的下週學習日曆』再次編輯。")
             if record:
                 st.rerun()
         except Exception as exc:
             st.error(f"儲存失敗，編輯內容仍保留：{exc}")
+
+
+def load_week_plans(start):
+    """Read the signed-in user's selected week directly, without cached content."""
+    table = _table("plans")
+    return (table.select("*").eq("user_id", current_user_id())
+            .eq("week_start", str(start)).order("id", desc=True).execute().data or [])
+
+
+def render_home_plan():
+    now = date.today()
+    start = now - timedelta(days=now.weekday()) + timedelta(days=7)
+    st.subheader("下週學習計畫")
+    st.button("重新整理學習日曆", key="home_plan_refresh")
+    try:
+        plans = load_week_plans(start)
+    except Exception as exc:
+        st.error(f"無法讀取下週計畫：{exc}")
+        return
+    if not plans:
+        st.info(f"{start} ～ {start + timedelta(days=6)} 尚未儲存學習計畫。")
+        st.page_link("pages/1_AI_Study_Plan.py", label="手動建立 / AI 制定讀書計畫", icon="📅")
+        return
+    ids = [r["id"] for r in plans]
+    preferred = st.session_state.get("plan_draft_home_" + current_user_id())
+    index = ids.index(preferred) if preferred in ids else 0
+    selected = st.selectbox("首頁顯示的下週計畫", ids, index=index,
+                            format_func=lambda value: f"計畫 #{value}",
+                            key=f"home_plan_selection_{current_user_id()}_{preferred}")
+    record = next(r for r in plans if r["id"] == selected)
+    render_week_calendar(record["content"], date.fromisoformat(record["week_start"]))
+    st.caption("每次回到首頁都會重新讀取已儲存內容；若在其他分頁修改，請按重新整理學習日曆。")
+    st.page_link("pages/4_我的下週學習日曆.py", label="查看 / 編輯學習日曆", icon="📅")
