@@ -92,3 +92,5 @@ with right:
 
 st.divider()
 
+
+render_home_plan()
