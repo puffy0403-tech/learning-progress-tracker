@@ -373,6 +373,14 @@ def render_sidebar_menu():
                                     on_click=select_ai_section,
                                     args=(section,),
                                 )
+                    elif label == "學習紀錄管理":
+                        with st.expander("學習紀錄管理", expanded=False):
+                            for section in ("設定學習目標", "紀錄今日學習", "全部學習紀錄+編輯紀錄"):
+                                st.button(
+                                    section, key="records_menu_" + section,
+                                    use_container_width=True,
+                                    on_click=select_records_section, args=(section,),
+                                )
                     else:
                         st.page_link(
                             page_path,
@@ -921,46 +929,50 @@ def render_home_plan():
     st.page_link("pages/4_我的下週學習日曆.py", label="查看 / 編輯學習日曆", icon="📅")
 
 
-def render_learning_settings(goals, page_key):
+def render_learning_settings(goals, page_key, section=None, sidebar=True):
     """Shared sidebar controls on home and learning-record pages."""
     settings_today = datetime.now(timezone(timedelta(hours=8))).date()
     prefix = f"learning_settings_{current_user_id()}_{page_key}"
-    with st.sidebar:
-        st.header(" 學習設定")
+    with st.sidebar if sidebar else st.container():
+        if sidebar:
+            st.header(" 學習設定")
     
-        with st.expander(" 設定學習目標", expanded=True):
-            goal_subject = st.text_input("科目 / 學習主題", placeholder="例如：英文", key=prefix + "_goal_subject")
-            weekly_hours = st.number_input("每週目標時數", min_value=0.5, max_value=100.0, value=7.0, step=0.5, key=prefix + "_weekly_hours")
-            target_score = st.number_input("目標分數（選填）", min_value=0.0, max_value=100.0, value=80.0, step=1.0, key=prefix + "_target_score")
-            target_date = st.date_input("目標日期", value=settings_today + timedelta(days=30), key=prefix + "_target_date")
-    
-            if st.button("儲存目標", use_container_width=True):
-                if goal_subject.strip():
-                    add_goal(goal_subject.strip(), weekly_hours, target_score, target_date)
-                    st.success("目標已儲存")
-                    st.rerun()
-                else:
-                    st.warning("請輸入學習主題")
-    
-        with st.expander(" 記錄今日學習", expanded=True):
-            existing_subjects = goals["subject"].drop_duplicates().tolist() if not goals.empty else []
-            log_subject = st.selectbox("學習科目", options=existing_subjects + ["其他"], key=prefix + "_log_subject")
-            custom_subject = ""
-            if log_subject == "其他":
-                custom_subject = st.text_input("其他科目名稱", key=prefix + "_custom_subject")
-    
-            study_date = st.date_input("日期", value=settings_today, key=prefix + "_study_date")
-            minutes = st.number_input("學習時間（分鐘）", min_value=1, max_value=1440, value=60, step=10, key=prefix + "_minutes")
-            note = st.text_area("學習內容", placeholder="例如：閱讀論文第二章、完成 Python 練習", key=prefix + "_note")
-    
-            if st.button("新增學習紀錄", use_container_width=True):
-                subject_to_save = custom_subject.strip() if log_subject == "其他" else log_subject
-                if subject_to_save:
-                    add_log(study_date, subject_to_save, minutes, note)
-                    st.success("學習紀錄已新增")
-                    st.rerun()
-                else:
-                    st.warning("請輸入科目名稱")
+        if section in (None, "設定學習目標"):
+            with st.expander(" 設定學習目標", expanded=True):
+                goal_subject = st.text_input("科目 / 學習主題", placeholder="例如：英文", key=prefix + "_goal_subject")
+                weekly_hours = st.number_input("每週目標時數", min_value=0.5, max_value=100.0, value=7.0, step=0.5, key=prefix + "_weekly_hours")
+                target_score = st.number_input("目標分數（選填）", min_value=0.0, max_value=100.0, value=80.0, step=1.0, key=prefix + "_target_score")
+                target_date = st.date_input("目標日期", value=settings_today + timedelta(days=30), key=prefix + "_target_date")
+        
+                if st.button("儲存目標", use_container_width=True):
+                    if goal_subject.strip():
+                        add_goal(goal_subject.strip(), weekly_hours, target_score, target_date)
+                        st.success("目標已儲存")
+                        st.rerun()
+                    else:
+                        st.warning("請輸入學習主題")
+
+        if section in (None, "紀錄今日學習"):
+            with st.expander(" 記錄今日學習", expanded=True):
+                existing_subjects = goals["subject"].drop_duplicates().tolist() if not goals.empty else []
+                log_subject = st.selectbox("學習科目", options=existing_subjects + ["其他"], key=prefix + "_log_subject")
+                custom_subject = ""
+                if log_subject == "其他":
+                    custom_subject = st.text_input("其他科目名稱", key=prefix + "_custom_subject")
+        
+                study_date = st.date_input("日期", value=settings_today, key=prefix + "_study_date")
+                minutes = st.number_input("學習時間（分鐘）", min_value=1, max_value=1440, value=60, step=10, key=prefix + "_minutes")
+                note = st.text_area("學習內容", placeholder="例如：閱讀論文第二章、完成 Python 練習", key=prefix + "_note")
+        
+                if st.button("新增學習紀錄", use_container_width=True):
+                    subject_to_save = custom_subject.strip() if log_subject == "其他" else log_subject
+                    if subject_to_save:
+                        add_log(study_date, subject_to_save, minutes, note)
+                        st.success("學習紀錄已新增")
+                        st.rerun()
+                    else:
+                        st.warning("請輸入科目名稱")
+
 
 
 def daily_encouragement(day=None):
@@ -992,3 +1004,8 @@ def select_ai_section(choice):
     if choice in ("手動建立讀書計畫", "AI建立讀書計畫"):
         st.session_state["plan_draft_section_" + current_user_id()] = choice
         st.switch_page("pages/1_AI_Study_Plan.py")
+
+def select_records_section(choice):
+    if choice in ("設定學習目標", "紀錄今日學習", "全部學習紀錄+編輯紀錄"):
+        st.session_state["plan_draft_records_section_" + current_user_id()] = choice
+        st.switch_page("pages/2_學習紀錄管理.py")
