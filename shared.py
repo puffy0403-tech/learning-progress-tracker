@@ -365,7 +365,7 @@ def render_sidebar_menu():
                 with link_col:
                     if label == "AI Study Plan":
                         with st.expander("AI Study Plan", expanded=False):
-                            for section in ("手動建立讀書計畫", "目前學習目標"):
+                            for section in ("手動建立讀書計畫", "AI建立讀書計畫"):
                                 st.button(
                                     section,
                                     key="ai_menu_" + section,
