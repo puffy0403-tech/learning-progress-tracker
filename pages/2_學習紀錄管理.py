@@ -8,10 +8,12 @@ render_brand_header()
 render_feature_title("學習紀錄管理", "study_record.png", "查看、修改或刪除已建立的學習紀錄。")
 st.page_link("app.py", label="回到首頁", icon="🏠")
 
+goals = load_goals()
+render_learning_settings(goals, "records")
 logs = load_logs()
 
 if logs.empty:
-    st.info("目前還沒有學習紀錄。請先回首頁新增紀錄。")
+    st.info("目前還沒有學習紀錄。可在左側「學習設定 → 記錄今日學習」直接新增。")
 else:
     display_df = logs.copy()
     display_df["study_date"] = pd.to_datetime(display_df["study_date"]).dt.date
