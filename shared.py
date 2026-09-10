@@ -326,7 +326,8 @@ def render_sidebar_menu():
             )
 
         # 圖片式功能列表
-        with st.expander(" 功能列表", expanded=True):
+        with st.container(border=True):
+            st.caption("功能列表")
             # 首頁：使用 assets/app.png 作為功能列表圖片
             home_icon = os.path.join(
                 os.path.dirname(__file__), "assets", "app.png"
@@ -362,18 +363,21 @@ def render_sidebar_menu():
                     if os.path.exists(icon_path):
                         st.image(icon_path, width=18)
                 with link_col:
-                    st.page_link(
-                        page_path,
-                        label=label,
-                        use_container_width=True,
-                    )
                     if label == "AI Study Plan":
-                        st.selectbox(
-                            "AI Study Plan 子選單",
-                            ["選擇功能", "手動建立讀書計畫", "目前學習目標"],
-                            key="ai_sidebar_choice",
-                            on_change=select_ai_section,
-                            label_visibility="collapsed",
+                        with st.expander("AI Study Plan", expanded=False):
+                            for section in ("手動建立讀書計畫", "目前學習目標"):
+                                st.button(
+                                    section,
+                                    key="ai_menu_" + section,
+                                    use_container_width=True,
+                                    on_click=select_ai_section,
+                                    args=(section,),
+                                )
+                    else:
+                        st.page_link(
+                            page_path,
+                            label=label,
+                            use_container_width=True,
                         )
 
 
@@ -984,9 +988,7 @@ def daily_encouragement(day=None):
     random.Random("LearnPilot-daily-" + current_user_id()).shuffle(messages)
     return messages[day.toordinal() % len(messages)]
 
-def select_ai_section():
-    choice = st.session_state.get("ai_sidebar_choice", "選擇功能")
-    if choice != "選擇功能":
+def select_ai_section(choice):
+    if choice in ("手動建立讀書計畫", "目前學習目標"):
         st.session_state["plan_draft_section_" + current_user_id()] = choice
-        st.session_state["ai_sidebar_choice"] = "選擇功能"
         st.switch_page("pages/1_AI_Study_Plan.py")
