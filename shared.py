@@ -719,7 +719,7 @@ def parse_plan_calendar(plan_text, start_date):
 def render_week_calendar(plan_text, next_week_start):
     cal = parse_plan_calendar(plan_text, next_week_start)
 
-    st.markdown("###  我的下週學習日曆")
+    st.markdown("###  學習日曆")
     st.caption(
         f"{next_week_start.strftime('%Y/%m/%d')} ～ "
         f"{(next_week_start + timedelta(days=6)).strftime('%Y/%m/%d')}"
@@ -906,10 +906,17 @@ def load_week_plans(start):
 def render_home_plan():
     now = date.today()
     start = now - timedelta(days=now.weekday()) + timedelta(days=7)
-    st.subheader("下週學習計畫")
+    st.subheader("我的最新讀書計畫")
     st.button("重新整理學習日曆", key="home_plan_refresh")
     try:
-        plans = load_week_plans(start)
+        all_plans = load_plans()
+        active = designated_plan(all_plans)
+        if active:
+            st.caption(f"目前指定：計畫 #{active['id']}｜{active['week_start']} 當週")
+            render_week_calendar(active["content"], date.fromisoformat(active["week_start"]))
+            st.page_link("pages/4_我的下週學習日曆.py", label="查看 / 編輯或更換最新計畫", icon="📅")
+            return
+        plans = [p for p in all_plans if p["week_start"] == str(start)]
     except Exception as exc:
         st.error(f"無法讀取下週計畫：{exc}")
         return
@@ -1017,3 +1024,16 @@ def render_ai_plan_dropdown(key):
             st.button(section, key=key + "_" + section,
                       use_container_width=True,
                       on_click=select_ai_section, args=(section,))
+
+def designated_plan(plans):
+    selected = [p for p in plans if p.get("selected_at")]
+    return max(selected, key=lambda p: (datetime.fromisoformat(p["selected_at"].replace("Z", "+00:00")), int(p["id"]))) if selected else None
+
+
+def designate_latest_plan(plan_id):
+    table = _table("plans")
+    response = (table.update({"selected_at": datetime.now(timezone.utc).isoformat()})
+                .eq("id", int(plan_id)).eq("user_id", current_user_id()).execute())
+    if not response.data:
+        raise RuntimeError("未更新任何計畫，請確認登入狀態與計畫是否仍存在。")
+    return response.data[0]

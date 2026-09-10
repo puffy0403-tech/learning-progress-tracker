@@ -16,9 +16,19 @@ except Exception as exc:
     st.stop()
 
 if plans:
+    active = designated_plan(plans)
+    if active:
+        st.caption(f"目前最新讀書計畫：#{active['id']}｜{active['week_start']} 當週")
     selected_id = st.selectbox("選擇已儲存計畫", [r["id"] for r in plans],
                               format_func=lambda value: next(f"#{r['id']}｜{r['week_start']} 當週" for r in plans if r["id"] == value))
     record = next(r for r in plans if r["id"] == selected_id)
+    if st.button("以這個計畫作為我的最新讀書計畫", type="primary", use_container_width=True):
+        try:
+            designate_latest_plan(selected_id)
+            st.success("已設為我的最新讀書計畫，回首頁即可查看。")
+        except Exception as exc:
+            st.error(f"設定失敗：{exc}")
+            st.info("若錯誤提到 selected_at 欄位，請先在 Supabase SQL Editor 執行 migration_latest_plan.sql。")
     saved_start = date.fromisoformat(record["week_start"])
     render_week_calendar(record["content"], saved_start)
     with st.expander("查看原始學習計畫文字"):
