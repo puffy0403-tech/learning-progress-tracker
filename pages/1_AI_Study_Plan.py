@@ -6,7 +6,7 @@ render_sidebar_menu()
 render_account_sidebar()
 render_brand_header()
 render_feature_title('AI Study Plan', 'ai_plan.png', daily_encouragement())
-st.page_link("app.py", label="回到首頁","app.png")
+st.page_link("app.py", label="回到首頁", icon="🏠")
 
 section = st.session_state.get("plan_draft_section_" + current_user_id(), "手動建立讀書計畫")
 if section == "手動建立讀書計畫":
