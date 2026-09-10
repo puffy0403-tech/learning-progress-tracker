@@ -989,6 +989,6 @@ def daily_encouragement(day=None):
     return messages[day.toordinal() % len(messages)]
 
 def select_ai_section(choice):
-    if choice in ("手動建立讀書計畫", "目前學習目標"):
+    if choice in ("手動建立讀書計畫", "AI建立讀書計畫"):
         st.session_state["plan_draft_section_" + current_user_id()] = choice
         st.switch_page("pages/1_AI_Study_Plan.py")
