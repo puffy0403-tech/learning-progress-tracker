@@ -1,5 +1,9 @@
 import os
 import re
+import json
+import math
+import hashlib
+from html import escape
 from datetime import date, datetime, timedelta
 
 import pandas as pd
@@ -147,6 +151,9 @@ def sign_in(email, password):
 
 
 def sign_out():
+    for key in list(st.session_state):
+        if key.startswith("plan_editor_") or key.startswith("plan_draft_"):
+            st.session_state.pop(key, None)
     try:
         client = get_supabase()
         if client is not None and is_logged_in():
@@ -328,7 +335,7 @@ def render_sidebar_menu():
             )
             with home_icon_col:
                 if os.path.exists(home_icon):
-                    st.image(home_icon, width=36)
+                    st.image(home_icon, width=18)
             with home_link_col:
                 st.page_link(
                     "app.py",
@@ -352,7 +359,7 @@ def render_sidebar_menu():
                 )
                 with icon_col:
                     if os.path.exists(icon_path):
-                        st.image(icon_path, width=36)
+                        st.image(icon_path, width=18)
                 with link_col:
                     st.page_link(
                         page_path,
@@ -437,12 +444,16 @@ def delete_log(log_id):
 
 
 def save_plan(week_start, content):
+    table = _table("plans")
     uid = current_user_id()
-    _table("plans").insert({
+    response = table.insert({
         "user_id": uid,
         "week_start": str(week_start),
         "content": content,
     }).execute()
+    if not response.data:
+        raise RuntimeError("未收到儲存結果，請重新載入日曆確認。")
+    return response.data[0]
 
 
 def load_goals():
@@ -601,6 +612,8 @@ def build_ai_plan(goals, logs):
                 model=model_name,
                 contents=prompt,
             )
+            if not response.text or not response.text.strip():
+                raise ValueError("AI 回傳空白計畫")
             return response.text
         except Exception as exc:
             last_error = exc
@@ -611,6 +624,9 @@ def build_ai_plan(goals, logs):
 
 
 def parse_plan_calendar(plan_text, start_date):
+    if "<!-- learnpilot-v1:" in (plan_text or ""):
+        rows, _ = editable_plan_data(plan_text, start_date)
+        return pd.DataFrame([dict(date=r["date"], weekday=["週一","週二","週三","週四","週五","週六","週日"][r["date"].weekday()], subject=r["subject"], hours=r["minutes"]/60, content=r["content"]) for r in rows], columns=["date","weekday","subject","hours","content"])
     weekday_map = {
         "週一": 0, "星期一": 0,
         "週二": 1, "星期二": 1,
@@ -719,7 +735,7 @@ def render_week_calendar(plan_text, next_week_start):
                     if item["content"]:
                         detail += (
                             f"<br><span style='font-size:.78rem;opacity:.72'>"
-                            f"{item['content']}</span>"
+                            f"{escape(str(item['content']))}</span>"
                         )
 
                     st.markdown(
@@ -732,7 +748,7 @@ def render_week_calendar(plan_text, next_week_start):
                             margin-bottom:7px;
                             min-height:72px;
                         ">
-                            <div style="font-weight:650;font-size:.9rem;">{item['subject']}</div>
+                            <div style="font-weight:650;font-size:.9rem;">{escape(str(item['subject']))}</div>
                             <div style="font-size:.82rem;margin-top:4px;">{detail}</div>
                         </div>
                         """,
@@ -743,9 +759,115 @@ def render_week_calendar(plan_text, next_week_start):
         st.info("目前的 AI 文字計畫中沒有辨識到「週一～週日」的排程。")
 
 
-def render_home_link():
-    icon_col, link_col = st.columns([0.6, 9.4], vertical_alignment="center")
-    with icon_col:
-        st.image(os.path.join(_BASE_DIR, "assets", "app.png"), width=36)
-    with link_col:
-        st.page_link("app.py", label="回到首頁")
+# Editable plans retain the existing content TEXT column and RLS.
+def load_plans():
+    table = _table("plans")
+    return table.select("*").eq("user_id", current_user_id()).order("id", desc=True).execute().data or []
+
+
+def update_plan(plan_id, start, content, original_content):
+    table = _table("plans")
+    response = (table.update({"week_start": str(start), "content": content})
+                .eq("id", int(plan_id)).eq("user_id", current_user_id())
+                .eq("content", original_content).execute())
+    if not response.data:
+        raise RuntimeError("未更新：計畫可能已在其他分頁修改、刪除或登入已失效。請重新載入後再試。")
+    return response.data[0]
+
+
+def editable_plan_data(text, start):
+    marker = "<!-- learnpilot-v1:"
+    if marker in (text or ""):
+        try:
+            payload = text.rsplit(marker, 1)[1].strip().removesuffix("-->").strip()
+            data = json.loads(payload)
+            rows = [{**r, "date": date.fromisoformat(r["date"])} for r in data["items"]]
+            return rows, data["notes"]
+        except (ValueError, KeyError, TypeError):
+            raise ValueError("計畫格式損壞，請保留原始文字並聯絡管理者。")
+    rows, notes = [], []
+    for line in (text or "").splitlines():
+        # Only consume actual schedule lines; retain all other original text.
+        if re.match(r"^\s*[-•*]?\s*(?:週|星期)[一二三四五六日天]\s*[：:]", line):
+            cal = parse_plan_calendar(line, start)
+            if not cal.empty:
+                r = cal.iloc[0]
+                minutes_match = re.search(r"(\d+(?:\.\d+)?)\s*分鐘", line)
+                minutes = float(minutes_match[1]) if minutes_match else float(r["hours"])*60
+                subject = re.sub(r"\s*\d+(?:\.\d+)?\s*分鐘.*", "", r["subject"]).strip()
+                rows.append(dict(date=r["date"], subject=subject, minutes=minutes, content=r["content"]))
+                continue
+        notes.append(line)
+    return rows, "\n".join(notes).strip()
+
+
+def serialize_editable_plan(rows, notes):
+    if not rows:
+        raise ValueError("請至少新增一個學習項目。")
+    cleaned = []
+    for i, row in enumerate(rows, 1):
+        try:
+            day = date.fromisoformat(str(row["date"])[:10])
+            minutes = float(row["minutes"])
+        except (ValueError, TypeError, KeyError):
+            raise ValueError(f"第 {i} 列：請填寫有效日期與分鐘。")
+        subject = str(row.get("subject") or "").strip()
+        if not subject or subject == "nan":
+            raise ValueError(f"第 {i} 列：科目不可空白。")
+        if not math.isfinite(minutes) or not 0 < minutes <= 1440:
+            raise ValueError(f"第 {i} 列：分鐘須大於 0 且不超過 1440。")
+        cleaned.append(dict(date=day.isoformat(), subject=subject, minutes=minutes,
+                            content=str(row.get("content") or "")))
+    start = date.fromisoformat(min(r["date"] for r in cleaned))
+    start -= timedelta(days=start.weekday())
+    if any(date.fromisoformat(r["date"]) > start + timedelta(days=6) for r in cleaned):
+        raise ValueError("一份計畫請安排在同一週；跨週項目請另建計畫。")
+    lines = ["### 學習計畫", str(notes).strip(), ""]
+    for r in cleaned:
+        day = date.fromisoformat(r["date"])
+        weekday = ["週一","週二","週三","週四","週五","週六","週日"][day.weekday()]
+        lines.append(f"- {weekday}：{r['subject']}｜{r['minutes']/60:g} 小時｜{r['content']}")
+    payload = json.dumps(dict(items=cleaned, notes=str(notes)), ensure_ascii=True)
+    return start, "\n".join(lines) + "\n<!-- learnpilot-v1:" + payload + " -->"
+
+
+def render_plan_editor(text, start, key, record=None):
+    key = f"plan_editor_{current_user_id()}_{key}"
+    try:
+        rows, notes = editable_plan_data(text, start)
+    except ValueError as exc:
+        st.error(str(exc))
+        return
+    if not rows:
+        rows = [dict(date=start, subject="", minutes=60.0, content="")]
+    st.caption("可新增或刪除列；日期決定星期。每份計畫限同一週，時間以分鐘輸入。")
+    with st.form(key):
+        edited = st.data_editor(
+            pd.DataFrame(rows), num_rows="dynamic", hide_index=True,
+            use_container_width=True, key=key+"_rows",
+            column_config={
+                "date": st.column_config.DateColumn("日期（星期依日期自動計算）", required=True),
+                "subject": st.column_config.TextColumn("科目 / 學習項目", required=True),
+                "minutes": st.column_config.NumberColumn("預計分鐘", min_value=1, max_value=1440, required=True),
+                "content": st.column_config.TextColumn("學習內容"),
+            })
+        edited_notes = st.text_area("分析、建議與其他原始文字（可編輯）", notes, key=key+"_notes")
+        submitted = st.form_submit_button("更新這份計畫" if record else "儲存新計畫", use_container_width=True)
+    if submitted:
+        try:
+            new_start, content = serialize_editable_plan(edited.to_dict("records"), edited_notes)
+            if record:
+                update_plan(record["id"], new_start, content, record["content"])
+            else:
+                # Repeated submission of the same draft updates its saved row.
+                saved = st.session_state.get(key+"_saved")
+                if saved:
+                    saved = update_plan(saved["id"], new_start, content, saved["content"])
+                else:
+                    saved = save_plan(new_start, content)
+                st.session_state[key+"_saved"] = saved
+            st.success("計畫已儲存。可到『我的下週學習日曆』查看與再次編輯。")
+            if record:
+                st.rerun()
+        except Exception as exc:
+            st.error(f"儲存失敗，編輯內容仍保留：{exc}")

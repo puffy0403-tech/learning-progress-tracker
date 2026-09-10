@@ -7,7 +7,7 @@ render_account_sidebar()
 render_brand_header()
 render_feature_title("本週目標進度", "progress.png")
 st.caption(f"本週：{week_start} ～ {week_end}")
-render_home_link()
+st.page_link("app.py", label="回到首頁", icon="🏠")
 
 goals = load_goals()
 logs = load_logs()
