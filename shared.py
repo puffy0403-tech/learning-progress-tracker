@@ -289,7 +289,7 @@ def render_auth():
 
 def login_required():
     if not is_logged_in():
-        st.warning(" 請先登入。")
+        st.warning("🔐 請先登入。")
         st.page_link("app.py", label="回到登入頁", icon="🔐")
         st.stop()
 
@@ -367,6 +367,15 @@ def render_sidebar_menu():
                         label=label,
                         use_container_width=True,
                     )
+                    if label == "AI Study Plan":
+                        st.selectbox(
+                            "AI Study Plan 子選單",
+                            ["選擇功能", "手動建立讀書計畫", "目前學習目標"],
+                            key="ai_sidebar_choice",
+                            on_change=select_ai_section,
+                            label_visibility="collapsed",
+                        )
+
 
 
 def render_account_sidebar():
@@ -974,3 +983,10 @@ def daily_encouragement(day=None):
     ]
     random.Random("LearnPilot-daily-" + current_user_id()).shuffle(messages)
     return messages[day.toordinal() % len(messages)]
+
+def select_ai_section():
+    choice = st.session_state.get("ai_sidebar_choice", "選擇功能")
+    if choice != "選擇功能":
+        st.session_state["plan_draft_section_" + current_user_id()] = choice
+        st.session_state["ai_sidebar_choice"] = "選擇功能"
+        st.switch_page("pages/1_AI_Study_Plan.py")
