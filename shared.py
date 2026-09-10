@@ -1,4 +1,5 @@
 import os
+import base64
 import re
 import json
 import math
@@ -719,7 +720,7 @@ def parse_plan_calendar(plan_text, start_date):
 def render_week_calendar(plan_text, next_week_start):
     cal = parse_plan_calendar(plan_text, next_week_start)
 
-    st.markdown("###  學習日曆")
+    render_calendar_heading()
     st.caption(
         f"{next_week_start.strftime('%Y/%m/%d')} ～ "
         f"{(next_week_start + timedelta(days=6)).strftime('%Y/%m/%d')}"
@@ -914,7 +915,7 @@ def render_home_plan():
         if active:
             st.caption(f"目前指定：計畫 #{active['id']}｜{active['week_start']} 當週")
             render_week_calendar(active["content"], date.fromisoformat(active["week_start"]))
-            st.page_link("pages/4_我的下週學習日曆.py", label="查看 / 編輯或更換最新計畫", icon="📅")
+            render_edit_plan_link("查看 / 編輯或更換最新計畫")
             return
         plans = [p for p in all_plans if p["week_start"] == str(start)]
     except Exception as exc:
@@ -1037,3 +1038,22 @@ def designate_latest_plan(plan_id):
     if not response.data:
         raise RuntimeError("未更新任何計畫，請確認登入狀態與計畫是否仍存在。")
     return response.data[0]
+
+def render_calendar_heading():
+    icon_path = os.path.join(_BASE_DIR, "assets", "calendar_heading.png")
+    with open(icon_path, "rb") as image_file:
+        encoded = base64.b64encode(image_file.read()).decode("ascii")
+    st.markdown(
+        f'<div style="display:flex;align-items:center;gap:10px;margin:0 0 12px;">'
+        f'<img src="data:image/png;base64,{encoded}" alt="" style="width:42px;height:42px;object-fit:contain;">'
+        '<h3 style="margin:0;padding:0;">學習日曆</h3></div>',
+        unsafe_allow_html=True,
+    )
+
+
+def render_edit_plan_link(label):
+    icon_col, link_col = st.columns([0.05, 0.95], gap="small", vertical_alignment="center")
+    with icon_col:
+        st.image(os.path.join(_BASE_DIR, "assets", "edit.png"), width=28)
+    with link_col:
+        st.page_link("pages/4_我的下週學習日曆.py", label=label)
