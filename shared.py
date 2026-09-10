@@ -1006,6 +1006,6 @@ def select_ai_section(choice):
         st.switch_page("pages/1_AI_Study_Plan.py")
 
 def select_records_section(choice):
-    if choice in ("設定學習目標", "紀錄今日學習", "全部學習紀錄+編輯紀錄"):
+    if choice in ("設定學習目標", "紀錄今日學習", "查看學習紀錄/編輯"):
         st.session_state["plan_draft_records_section_" + current_user_id()] = choice
         st.switch_page("pages/2_學習紀錄管理.py")
