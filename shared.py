@@ -39,7 +39,7 @@ st.set_page_config(
     page_title="LearnPilot",
     page_icon=_page_icon,
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="auto",
 )
 
 
@@ -720,7 +720,7 @@ def parse_plan_calendar(plan_text, start_date):
     return pd.DataFrame(rows)
 
 
-def render_week_calendar(plan_text, next_week_start):
+def render_desktop_week_calendar(plan_text, next_week_start):
     cal = parse_plan_calendar(plan_text, next_week_start)
 
     render_calendar_heading()
@@ -1069,6 +1069,7 @@ def render_home_link():
         st.page_link("app.py", label="回到首頁")
 
 def hide_streamlit_toolbar():
+    render_responsive_styles()
     """Hide app toolbar actions while keeping sidebar navigation controls."""
     st.markdown("""
         <style>
@@ -1080,3 +1081,68 @@ def hide_streamlit_toolbar():
         }
         </style>
     """, unsafe_allow_html=True)
+
+def render_responsive_styles():
+    st.markdown("""
+    <style>
+    .lp-mobile-calendar {display:none;}
+    @media (max-width: 640px) {
+        .st-key-desktop_calendar {display:none !important;}
+        .lp-mobile-calendar {display:block;}
+        .stMainBlockContainer {padding-left:1rem !important;padding-right:1rem !important;}
+        h1 {font-size:1.8rem !important;overflow-wrap:anywhere;}
+        h2 {font-size:1.5rem !important;}
+        h3 {font-size:1.2rem !important;}
+        [data-testid="stHorizontalBlock"]:has([data-testid="stMetric"]) {
+            flex-wrap:wrap !important;gap:0.75rem !important;
+        }
+        [data-testid="stHorizontalBlock"]:has([data-testid="stMetric"]) > [data-testid="stColumn"] {
+            flex:1 1 calc(50% - 0.75rem) !important;
+            width:calc(50% - 0.75rem) !important;min-width:0 !important;
+        }
+        [data-testid="stMetricValue"] {font-size:1.7rem !important;}
+        [data-testid="stHorizontalBlock"]:has([data-testid="stPlotlyChart"]) {
+            flex-direction:column !important;
+        }
+        [data-testid="stHorizontalBlock"]:has([data-testid="stPlotlyChart"]) > [data-testid="stColumn"] {
+            width:100% !important;flex:1 1 100% !important;
+        }
+        [data-testid="stButton"] button,
+        [data-testid="stFormSubmitButton"] button {min-height:44px;white-space:normal;}
+        [data-testid="stDataFrame"], [data-testid="stDataEditor"] {max-width:100%;overflow-x:auto;}
+        .lp-day-card {border:1px solid rgba(128,128,128,.25);border-radius:12px;padding:12px;margin-bottom:12px;}
+        .lp-day-title {font-weight:700;margin-bottom:8px;}
+        .lp-day-item {border-left:4px solid var(--primary-color,#00a6ad);padding:8px 10px;margin:6px 0;background:rgba(128,128,128,.06);overflow-wrap:anywhere;}
+        .lp-day-detail {font-size:.9rem;opacity:.8;white-space:pre-wrap;}
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+
+def render_week_calendar(plan_text, next_week_start):
+    with st.container(key="desktop_calendar"):
+        render_desktop_week_calendar(plan_text, next_week_start)
+    cal = parse_plan_calendar(plan_text, next_week_start)
+    icon_path = os.path.join(_BASE_DIR, "assets", "calendar_heading.png")
+    with open(icon_path, "rb") as f:
+        icon = base64.b64encode(f.read()).decode("ascii")
+    parts = [
+        '<section class="lp-mobile-calendar">',
+        f'<h3><img src="data:image/png;base64,{icon}" alt="" style="width:32px;vertical-align:middle;margin-right:8px;">學習日曆</h3>',
+        f'<p>{next_week_start:%Y/%m/%d} ～ {next_week_start + timedelta(days=6):%Y/%m/%d}</p>'
+    ]
+    for i, weekday in enumerate(["週一","週二","週三","週四","週五","週六","週日"]):
+        day = next_week_start + timedelta(days=i)
+        parts.append(f'<div class="lp-day-card"><div class="lp-day-title">{weekday} · {day:%m/%d}</div>')
+        rows = cal[cal["date"] == day] if not cal.empty else pd.DataFrame()
+        if rows.empty:
+            parts.append('<div class="lp-day-detail">休息 / 彈性</div>')
+        else:
+            for _, row in rows.iterrows():
+                subject = escape(str(row["subject"]))
+                content = escape(str(row["content"]))
+                minutes = float(row["hours"])*60
+                parts.append(f'<div class="lp-day-item"><strong>{subject}</strong><div>{minutes:g} 分鐘</div><div class="lp-day-detail">{content}</div></div>')
+        parts.append('</div>')
+    parts.append('</section>')
+    st.markdown("".join(parts), unsafe_allow_html=True)
