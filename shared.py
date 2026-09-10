@@ -39,6 +39,7 @@ st.set_page_config(
     page_title="LearnPilot",
     page_icon=_page_icon,
     layout="wide",
+    initial_sidebar_state="expanded",
 )
 
 
@@ -1071,8 +1072,8 @@ def hide_streamlit_toolbar():
     """Hide app toolbar actions while keeping sidebar navigation controls."""
     st.markdown("""
         <style>
-        [data-testid="stToolbar"],
         [data-testid="stToolbarActions"],
+        [data-testid="stToolbarActionButton"],
         [data-testid="stMainMenu"],
         #MainMenu {
             display: none !important;
