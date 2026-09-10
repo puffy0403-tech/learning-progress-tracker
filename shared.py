@@ -4,7 +4,8 @@ import json
 import math
 import hashlib
 from html import escape
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
+import random
 
 import pandas as pd
 import plotly.express as px
@@ -905,3 +906,71 @@ def render_home_plan():
     render_week_calendar(record["content"], date.fromisoformat(record["week_start"]))
     st.caption("每次回到首頁都會重新讀取已儲存內容；若在其他分頁修改，請按重新整理學習日曆。")
     st.page_link("pages/4_我的下週學習日曆.py", label="查看 / 編輯學習日曆", icon="📅")
+
+
+def render_learning_settings(goals, page_key):
+    """Shared sidebar controls on home and learning-record pages."""
+    settings_today = datetime.now(timezone(timedelta(hours=8))).date()
+    prefix = f"learning_settings_{current_user_id()}_{page_key}"
+    with st.sidebar:
+        st.header(" 學習設定")
+    
+        with st.expander(" 設定學習目標", expanded=True):
+            goal_subject = st.text_input("科目 / 學習主題", placeholder="例如：英文", key=prefix + "_goal_subject")
+            weekly_hours = st.number_input("每週目標時數", min_value=0.5, max_value=100.0, value=7.0, step=0.5, key=prefix + "_weekly_hours")
+            target_score = st.number_input("目標分數（選填）", min_value=0.0, max_value=100.0, value=80.0, step=1.0, key=prefix + "_target_score")
+            target_date = st.date_input("目標日期", value=settings_today + timedelta(days=30), key=prefix + "_target_date")
+    
+            if st.button("儲存目標", use_container_width=True):
+                if goal_subject.strip():
+                    add_goal(goal_subject.strip(), weekly_hours, target_score, target_date)
+                    st.success("目標已儲存")
+                    st.rerun()
+                else:
+                    st.warning("請輸入學習主題")
+    
+        with st.expander(" 記錄今日學習", expanded=True):
+            existing_subjects = goals["subject"].drop_duplicates().tolist() if not goals.empty else []
+            log_subject = st.selectbox("學習科目", options=existing_subjects + ["其他"], key=prefix + "_log_subject")
+            custom_subject = ""
+            if log_subject == "其他":
+                custom_subject = st.text_input("其他科目名稱", key=prefix + "_custom_subject")
+    
+            study_date = st.date_input("日期", value=settings_today, key=prefix + "_study_date")
+            minutes = st.number_input("學習時間（分鐘）", min_value=1, max_value=1440, value=60, step=10, key=prefix + "_minutes")
+            note = st.text_area("學習內容", placeholder="例如：閱讀論文第二章、完成 Python 練習", key=prefix + "_note")
+    
+            if st.button("新增學習紀錄", use_container_width=True):
+                subject_to_save = custom_subject.strip() if log_subject == "其他" else log_subject
+                if subject_to_save:
+                    add_log(study_date, subject_to_save, minutes, note)
+                    st.success("學習紀錄已新增")
+                    st.rerun()
+                else:
+                    st.warning("請輸入科目名稱")
+
+
+def daily_encouragement(day=None):
+    """A shuffled daily rotation, stable within a Taiwan calendar day."""
+    if day is None:
+        day = datetime.now(timezone(timedelta(hours=8))).date()
+    messages = [
+        "今天多懂一點，明天就多一份自信。",
+        "不用一次做到完美，先完成今天的一小步。",
+        "每一次練習，都在替未來的你累積實力。",
+        "慢慢學也沒關係，持續前進就有收穫。",
+        "把大目標拆小，今天也能有所進展。",
+        "專心做好眼前這一題，就是進步的開始。",
+        "遇到不懂的地方，正是成長的機會。",
+        "給自己一點耐心，你正在一步步學會。",
+        "今天的努力，會成為明天的底氣。",
+        "休息一下再出發，學習也需要好好照顧自己。",
+        "每一筆學習紀錄，都是你努力的證明。",
+        "先開始五分鐘，讓行動帶你往前走。",
+        "不必和別人比速度，照自己的節奏前進。",
+        "願意再試一次，就多一次學會的可能。",
+        "把好奇心留下來，答案會在探索中慢慢清楚。",
+        "今天完成的小事，也值得為自己鼓掌。",
+    ]
+    random.Random("LearnPilot-daily-" + current_user_id()).shuffle(messages)
+    return messages[day.toordinal() % len(messages)]
