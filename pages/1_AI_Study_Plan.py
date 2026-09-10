@@ -6,7 +6,7 @@ render_sidebar_menu()
 render_account_sidebar()
 render_brand_header()
 render_feature_title('AI Study Plan', 'ai_plan.png', daily_encouragement())
-st.page_link("app.py", label="回到首頁", icon="🏠")
+render_home_link()
 
 section = st.session_state.get("plan_draft_section_" + current_user_id(), "手動建立讀書計畫")
 if section == "手動建立讀書計畫":
@@ -16,7 +16,7 @@ if section == "手動建立讀書計畫":
         st.session_state[manual_version_key] = st.session_state.get(manual_version_key, 0) + 1
     with st.expander("自行安排日期、科目、內容與時間", expanded=True):
         render_plan_editor("", date.today() - timedelta(days=date.today().weekday()) + timedelta(days=7), "manual_" + str(st.session_state.get(manual_version_key, 0)))
-    st.page_link("pages/4_我的下週學習日曆.py", label="查看 / 編輯已儲存計畫", icon="📅")
+    render_edit_plan_link("查看 / 編輯已儲存計畫")
 else:
     goals = load_goals()
     logs = load_logs()

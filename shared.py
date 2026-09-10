@@ -934,7 +934,7 @@ def render_home_plan():
     record = next(r for r in plans if r["id"] == selected)
     render_week_calendar(record["content"], date.fromisoformat(record["week_start"]))
     st.caption("每次回到首頁都會重新讀取已儲存內容；若在其他分頁修改，請按重新整理學習日曆。")
-    st.page_link("pages/4_我的下週學習日曆.py", label="查看 / 編輯學習日曆", icon="📅")
+    render_edit_plan_link("查看 / 編輯學習日曆")
 
 
 def render_learning_settings(goals, page_key, section=None, sidebar=True):
@@ -1057,3 +1057,10 @@ def render_edit_plan_link(label):
         st.image(os.path.join(_BASE_DIR, "assets", "edit.png"), width=28)
     with link_col:
         st.page_link("pages/4_我的下週學習日曆.py", label=label)
+
+def render_home_link():
+    icon_col, link_col = st.columns([0.05, 0.95], gap="small", vertical_alignment="center")
+    with icon_col:
+        st.image(os.path.join(_BASE_DIR, "assets", "app.png"), width=28)
+    with link_col:
+        st.page_link("app.py", label="回到首頁")

@@ -6,7 +6,7 @@ render_sidebar_menu()
 render_account_sidebar()
 render_brand_header()
 render_feature_title('我的下週學習日曆', 'calendar.png', daily_encouragement())
-st.page_link("app.py", label="回到首頁", icon="🏠")
+render_home_link()
 
 
 try:
