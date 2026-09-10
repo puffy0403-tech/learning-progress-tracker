@@ -191,6 +191,7 @@ def render_feature_title(title, icon_filename, caption=None, icon_width=58):
 
 
 def render_brand_header(subtitle=""):
+    hide_streamlit_toolbar()
     """顯示 LearnPilot 圖示 + 系統名稱，可在首頁與各功能頁重複使用。"""
     icon_path = os.path.join(os.path.dirname(__file__), "assets", "learnpilot_icon.png")
 
@@ -208,6 +209,7 @@ def render_brand_header(subtitle=""):
 
 
 def render_auth():
+    hide_streamlit_toolbar()
     """Login / registration screen. Returns True when logged in."""
     if is_logged_in():
         return True
@@ -1064,3 +1066,16 @@ def render_home_link():
         st.image(os.path.join(_BASE_DIR, "assets", "app.png"), width=28)
     with link_col:
         st.page_link("app.py", label="回到首頁")
+
+def hide_streamlit_toolbar():
+    """Hide app toolbar actions while keeping sidebar navigation controls."""
+    st.markdown("""
+        <style>
+        [data-testid="stToolbar"],
+        [data-testid="stToolbarActions"],
+        [data-testid="stMainMenu"],
+        #MainMenu {
+            display: none !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
