@@ -424,8 +424,7 @@ def render_account_sidebar():
     .st-key-lp_account_topbar [data-testid="stColumn"]:nth-child(2) {
         flex: 1 1 0 !important;
     }
-    .st-key-lp_account_topbar [data-testid="stColumn"]:nth-child(3),
-    .st-key-lp_account_topbar [data-testid="stColumn"]:nth-child(4) {
+    .st-key-lp_account_topbar [data-testid="stColumn"]:nth-child(3) {
         flex: 0 0 64px !important;
     }
     .lp-profile-photo {width:36px;height:36px;border-radius:50%;object-fit:cover;display:block;}
@@ -434,19 +433,44 @@ def render_account_sidebar():
     </style>
     """, unsafe_allow_html=True)
     with st.container(key="lp_account_topbar"):
-        photo_col, name_col, upload_col, logout_col = st.columns([1, 4, 2, 2], vertical_alignment="center")
+        photo_col, name_col, logout_col = st.columns([1, 4, 2], vertical_alignment="center")
         with photo_col:
             photo = st.session_state.get("profile_photo", "")
-            if isinstance(photo, str) and photo.startswith("data:image/jpeg;base64,"):
-                st.markdown(f'<img class="lp-profile-photo" src="{escape(photo, quote=True)}" alt="個人照片">', unsafe_allow_html=True)
-            else:
-                st.markdown('<span aria-label="尚未設定照片">👤</span>', unsafe_allow_html=True)
+            # Use a real Streamlit button for keyboard and click support.
+            photo_background = "none"
+            if isinstance(photo, str) and re.fullmatch(r"data:image/jpeg;base64,[A-Za-z0-9+/=]+", photo):
+                photo_background = f'url("{photo}")'
+            st.markdown(f"""
+            <style>
+            .st-key-plan_editor_profile_toggle button {{
+                width: 36px !important; min-width: 36px !important;
+                height: 36px !important; min-height: 36px !important;
+                padding: 0 !important; border-radius: 50% !important;
+                background-image: {photo_background};
+                background-size: cover; background-position: center;
+                border: 1px solid rgba(128,128,128,.25);
+                cursor: pointer;
+            }}
+            .st-key-plan_editor_profile_toggle button:hover {{
+                outline: 2px solid var(--primary-color, #00a6ad);
+            }}
+            .st-key-plan_editor_profile_toggle button:focus-visible {{
+                outline: 3px solid var(--primary-color, #00a6ad);
+                outline-offset: 2px;
+            }}
+            </style>
+            """, unsafe_allow_html=True)
+            if photo_background != "none":
+                st.markdown("""<style>
+                .st-key-plan_editor_profile_toggle button p {
+                    opacity: 0;
+                }
+                </style>""", unsafe_allow_html=True)
+            if st.button("👤", key="plan_editor_profile_toggle", help="點擊頭像，更換個人照片"):
+                st.session_state["plan_editor_profile_open"] = not st.session_state.get("plan_editor_profile_open", False)
         with name_col:
             label = escape(str(current_user_label()), quote=True)
             st.markdown(f'<div class="lp-account-name" title="{label}">{label}</div>', unsafe_allow_html=True)
-        with upload_col:
-            if st.button("照片", key="plan_editor_profile_toggle", use_container_width=True):
-                st.session_state["plan_editor_profile_open"] = not st.session_state.get("plan_editor_profile_open", False)
         with logout_col:
             if st.button("登出", key="lp_account_logout", use_container_width=True):
                 sign_out()
