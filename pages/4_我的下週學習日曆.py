@@ -32,7 +32,7 @@ if plans:
     saved_start = date.fromisoformat(record["week_start"])
     render_week_calendar(record["content"], saved_start)
     with st.expander("查看原始學習計畫文字"):
-        st.markdown(record["content"].split("<!-- learnpilot-v1:", 1)[0])
+        render_ai_plan_text(record["content"].split("<!-- learnpilot-v1:", 1)[0])
     with st.expander("編輯這份計畫", expanded=True):
         revision = hashlib.sha256(record["content"].encode()).hexdigest()[:12]
         render_plan_editor(record["content"], saved_start, f"saved_{selected_id}_{revision}", record)

@@ -62,7 +62,7 @@ else:
         plan = st.session_state[draft_key]
         if plan:
             st.subheader(" 產生結果")
-            st.markdown(plan)
+            render_ai_plan_text(plan)
             render_week_calendar(plan, st.session_state.get(draft_key+"_start", next_week_start))
     
             st.subheader("編輯後儲存")

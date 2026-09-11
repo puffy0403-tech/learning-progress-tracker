@@ -576,6 +576,47 @@ def build_rule_based_plan(goals, logs):
     return "\n".join(lines)
 
 
+
+def render_ai_plan_text(plan_text):
+    """顯示 AI 計畫，三個主要區段使用 LearnPilot 自訂 PNG 圖示。"""
+    icon_map = {
+        "本週學習狀況分析": "analyze.png",
+        "下一週學習計畫": "calendar.png",
+        "學習調整建議": "suggestion.png",
+    }
+
+    blocks = []
+    current = []
+    for raw_line in str(plan_text or "").splitlines():
+        clean = re.sub(r"^[#\s📊📈📅🗓️💡✨]+", "", raw_line).strip()
+        matched = next((title for title in icon_map if title in clean), None)
+        if matched:
+            if current:
+                blocks.append(("text", "\n".join(current)))
+                current = []
+            blocks.append(("heading", matched))
+        else:
+            current.append(raw_line)
+
+    if current:
+        blocks.append(("text", "\n".join(current)))
+
+    for kind, value in blocks:
+        if kind == "text":
+            if value.strip():
+                st.markdown(value)
+        else:
+            icon_path = os.path.join(os.path.dirname(__file__), "assets", icon_map[value])
+            c1, c2 = st.columns([0.07, 0.93], vertical_alignment="center")
+            with c1:
+                if os.path.exists(icon_path):
+                    st.image(icon_path, width=42)
+            with c2:
+                st.markdown(
+                    f"<h2 style='margin:0; padding:0;'>{value}</h2>",
+                    unsafe_allow_html=True,
+                )
+
 def gemini_api_ready():
     return bool(_secret("GEMINI_API_KEY") and genai is not None)
 
@@ -607,8 +648,8 @@ def build_ai_plan(goals, logs):
 3. 再安排週一到週日的學習內容與時數。
 4. 每日不要塞太多工作。
 5. 若本週某科目落後，下一週稍微提高該科目比重。
-6. 最後給 2~3 點調整建議。
-7. 每一個實際排程都必須獨立一行，並嚴格使用以下格式：
+6. 最後給 2~3 點調整建議。\n7. 三個主要段落標題請使用「本週學習狀況分析」、「下一週學習計畫」、「學習調整建議」，標題前不要加入 Emoji 或其他圖示。
+8. 每一個實際排程都必須獨立一行，並嚴格使用以下格式：
    - 週一：英文｜1.0 小時｜單字複習
    - 週二：Python｜1.5 小時｜完成資料分析練習
    一週七天都可以安排，也可以保留休息日。
