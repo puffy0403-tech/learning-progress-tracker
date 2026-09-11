@@ -877,7 +877,7 @@ def render_plan_editor(text, start, key, record=None):
                 "minutes": st.column_config.NumberColumn("預計分鐘", min_value=1, max_value=1440, required=True),
                 "content": st.column_config.TextColumn("學習內容"),
             })
-        edited_notes = st.text_area("分析、建議與其他原始文字（可編輯）", notes, key=key+"_notes")
+        edited_notes = st.text_area("分析、建議與其他原始文字", notes, key=key+"_notes")
         submitted = st.form_submit_button("更新這份計畫" if record else "儲存新計畫", use_container_width=True)
     if submitted:
         try:
