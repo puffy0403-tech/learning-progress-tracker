@@ -229,7 +229,7 @@ def render_auth():
 
     st.markdown(
         "<p style='text-align:center;opacity:.7;margin-top:.35rem;'>"
-        "登入或建立帳號，開始記錄自己的學習進度"
+        "登入或建立帳號，開始記錄自己的學習進度!"
         "</p>",
         unsafe_allow_html=True,
     )
@@ -293,8 +293,8 @@ def render_auth():
 
 def login_required():
     if not is_logged_in():
-        st.warning("🔐 請先登入。")
-        st.page_link("app.py", label="回到登入頁", icon="🔐")
+        st.warning(" 請先登入。")
+        st.page_link("app.py", label="回到登入頁", icon=" ")
         st.stop()
 
 
