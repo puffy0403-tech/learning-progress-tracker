@@ -1075,6 +1075,23 @@ def designated_plan(plans):
     return max(selected, key=lambda p: (datetime.fromisoformat(p["selected_at"].replace("Z", "+00:00")), int(p["id"]))) if selected else None
 
 
+
+def delete_plan(plan_id):
+    """刪除目前登入使用者指定的已儲存學習計畫。"""
+    client = authenticated_supabase()
+    user_id = st.session_state.get("user_id")
+    if not client or not user_id:
+        raise RuntimeError("請先登入。")
+    (
+        client.table("plans")
+        .delete()
+        .eq("id", plan_id)
+        .eq("user_id", user_id)
+        .execute()
+    )
+    return True
+
+
 def designate_latest_plan(plan_id):
     table = _table("plans")
     response = (table.update({"selected_at": datetime.now(timezone.utc).isoformat()})
