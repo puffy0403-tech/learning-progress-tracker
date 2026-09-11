@@ -605,45 +605,57 @@ def normalize_ai_display_text(text):
 
 
 def render_ai_plan_text(plan_text):
-    """顯示 AI 計畫，三個主要區段使用 LearnPilot 自訂 PNG 圖示。"""
-    plan_text = normalize_ai_display_text(plan_text)
-    icon_map = {
-        "本週學習狀況分析": "analyze.png",
-        "下一週學習計畫": "calendar.png",
-        "學習調整建議": "suggestion.png",
+    """Render AI sections with scoped protection against strikethrough."""
+    st.markdown("""
+    <style>
+    /* Only AI plan prose: keep ordinary Markdown elsewhere unchanged. */
+    .st-key-lp_ai_plan_text del,
+    .st-key-lp_ai_plan_text s,
+    .st-key-lp_ai_plan_text strike {
+        text-decoration: none !important;
+        text-decoration-line: none !important;
     }
+    </style>
+    """, unsafe_allow_html=True)
+    with st.container(key="lp_ai_plan_text"):
+        plan_text = normalize_ai_display_text(plan_text)
+        icon_map = {
+            "本週學習狀況分析": "analyze.png",
+            "下一週學習計畫": "calendar.png",
+            "學習調整建議": "suggestion.png",
+        }
 
-    blocks = []
-    current = []
-    for raw_line in str(plan_text or "").splitlines():
-        clean = re.sub(r"^[#\s📊📈📅🗓️💡✨]+", "", raw_line).strip()
-        matched = next((title for title in icon_map if title in clean), None)
-        if matched:
-            if current:
-                blocks.append(("text", "\n".join(current)))
-                current = []
-            blocks.append(("heading", matched))
-        else:
-            current.append(raw_line)
+        blocks = []
+        current = []
+        for raw_line in str(plan_text or "").splitlines():
+            clean = re.sub(r"^[#\s📊📈📅🗓️💡✨]+", "", raw_line).strip()
+            matched = next((title for title in icon_map if title in clean), None)
+            if matched:
+                if current:
+                    blocks.append(("text", "\n".join(current)))
+                    current = []
+                blocks.append(("heading", matched))
+            else:
+                current.append(raw_line)
 
-    if current:
-        blocks.append(("text", "\n".join(current)))
+        if current:
+            blocks.append(("text", "\n".join(current)))
 
-    for kind, value in blocks:
-        if kind == "text":
-            if value.strip():
-                st.markdown(normalize_ai_display_text(value))
-        else:
-            icon_path = os.path.join(os.path.dirname(__file__), "assets", icon_map[value])
-            c1, c2 = st.columns([0.07, 0.93], vertical_alignment="center")
-            with c1:
-                if os.path.exists(icon_path):
-                    st.image(icon_path, width=42)
-            with c2:
-                st.markdown(
-                    f"<h2 style='margin:0; padding:0;'>{value}</h2>",
-                    unsafe_allow_html=True,
-                )
+        for kind, value in blocks:
+            if kind == "text":
+                if value.strip():
+                    st.markdown(normalize_ai_display_text(value))
+            else:
+                icon_path = os.path.join(os.path.dirname(__file__), "assets", icon_map[value])
+                c1, c2 = st.columns([0.07, 0.93], vertical_alignment="center")
+                with c1:
+                    if os.path.exists(icon_path):
+                        st.image(icon_path, width=42)
+                with c2:
+                    st.markdown(
+                        f"<h2 style='margin:0; padding:0;'>{value}</h2>",
+                        unsafe_allow_html=True,
+                    )
 
 def gemini_api_ready():
     return bool(_secret("GEMINI_API_KEY") and genai is not None)
