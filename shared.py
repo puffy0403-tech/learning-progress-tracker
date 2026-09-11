@@ -46,6 +46,11 @@ st.set_page_config(
 # =========================================================
 # Supabase configuration / authentication
 # =========================================================
+def normalize_ai_display_text(text):
+    """避免 AI 的 ~~ 被 Markdown 解讀成刪除線。"""
+    return str(text or "").replace("~~", "～")
+
+
 def _secret(name, default=""):
     try:
         value = st.secrets.get(name, default)
@@ -579,6 +584,7 @@ def build_rule_based_plan(goals, logs):
 
 def render_ai_plan_text(plan_text):
     """顯示 AI 計畫，三個主要區段使用 LearnPilot 自訂 PNG 圖示。"""
+    plan_text = normalize_ai_display_text(plan_text)
     icon_map = {
         "本週學習狀況分析": "analyze.png",
         "下一週學習計畫": "calendar.png",
@@ -639,6 +645,8 @@ def build_ai_plan(goals, logs):
     )
 
     prompt = f"""
+所有數值範圍與時間範圍請使用「～」（例如 2～3 小時、19:30～22:00），不要使用「~~」，避免 Markdown 刪除線。
+
 你是一個個人學習規劃助手。請依照使用者的學習目標與本週學習紀錄，
 產生「下一週」可執行的學習計畫。
 
