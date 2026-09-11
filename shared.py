@@ -445,25 +445,44 @@ def render_account_sidebar():
             label = escape(str(current_user_label()), quote=True)
             st.markdown(f'<div class="lp-account-name" title="{label}">{label}</div>', unsafe_allow_html=True)
         with upload_col:
-            with st.popover("照片"):
-                st.write("上傳個人照片")
-                photo_file = st.file_uploader("選擇 JPG 或 PNG（最多 5 MB）", type=["jpg", "jpeg", "png"], key="plan_editor_profile_upload")
-                if st.button("儲存照片", disabled=photo_file is None, key="plan_editor_profile_save"):
-                    try:
-                        photo = prepare_profile_photo(photo_file.getvalue())
-                        client = get_supabase()
-                        if client is None or not is_logged_in():
-                            raise ValueError("請重新登入後再試。")
-                        client.auth.update_user({"data": {"profile_photo": photo}})
-                        st.session_state["profile_photo"] = photo
-                    except Exception as exc:
-                        st.error(f"照片儲存失敗：{exc}")
-                    else:
-                        st.rerun()
+            if st.button("照片", key="plan_editor_profile_toggle", use_container_width=True):
+                st.session_state["plan_editor_profile_open"] = not st.session_state.get("plan_editor_profile_open", False)
         with logout_col:
             if st.button("登出", key="lp_account_logout", use_container_width=True):
                 sign_out()
                 st.rerun()
+    # Render outside the fixed account bar so the uploader stays in normal flow.
+    if st.session_state.get("plan_editor_profile_open", False):
+        with st.container(border=True):
+            st.subheader("更換個人照片")
+            photo_file = st.file_uploader("選擇 JPG 或 PNG（最多 5 MB）", type=["jpg", "jpeg", "png"], key="plan_editor_profile_upload")
+            if photo_file is not None:
+                try:
+                    preview = prepare_profile_photo(photo_file.getvalue())
+                    st.image(base64.b64decode(preview.split(",", 1)[1]), width=96)
+                except Exception as exc:
+                    st.error(f"無法讀取照片：{exc}")
+            if st.button("儲存照片", disabled=photo_file is None, key="plan_editor_profile_save"):
+                try:
+                    photo = prepare_profile_photo(photo_file.getvalue())
+                    client = get_supabase()
+                    if client is None or not is_logged_in():
+                        raise ValueError("請重新登入後再試。")
+                    response = client.auth.update_user({"data": {"profile_photo": photo}})
+                    if getattr(response, "user", None) is None:
+                        raise ValueError("未收到帳號更新結果，請重試。")
+                    _store_auth_response(response)
+                except Exception as exc:
+                    st.error(f"照片儲存失敗：{exc}")
+                else:
+                    st.session_state["plan_editor_profile_open"] = False
+                    st.session_state["plan_editor_profile_notice"] = True
+                    st.rerun()
+            if st.button("取消", key="plan_editor_profile_cancel"):
+                st.session_state["plan_editor_profile_open"] = False
+                st.rerun()
+    if st.session_state.pop("plan_editor_profile_notice", False):
+        st.success("個人照片已更新。")
 
 
 def prepare_profile_photo(data):
