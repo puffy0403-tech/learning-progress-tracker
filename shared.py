@@ -866,7 +866,7 @@ def render_plan_editor(text, start, key, record=None):
         return
     if not rows:
         rows = [dict(date=start, subject="", minutes=60.0, content="")]
-    st.caption("可新增或刪除列；日期決定星期。每份計畫限同一週，時間以分鐘輸入。")
+    st.caption("")
     with st.form(key):
         edited = st.data_editor(
             pd.DataFrame(rows), num_rows="dynamic", hide_index=True,
