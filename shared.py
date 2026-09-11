@@ -307,6 +307,9 @@ def render_sidebar_menu():
         [data-testid="stSidebarNav"] {
             display: none;
         }
+        [data-testid="stSidebarUserContent"] {
+            padding-top: 1rem !important;
+        }
         </style>
         """,
         unsafe_allow_html=True,
@@ -395,13 +398,59 @@ def render_sidebar_menu():
 
 
 def render_account_sidebar():
+    """Display the account controls at the top right on every signed-in page."""
     if not is_logged_in():
         return
-    st.sidebar.divider()
-    st.sidebar.caption(f"👤 {current_user_label()}")
-    if st.sidebar.button(" 登出", use_container_width=True):
-        sign_out()
-        st.rerun()
+    st.markdown("""
+    <style>
+    .st-key-lp_account_topbar {
+        position: fixed;
+        top: 0.4rem;
+        right: 1rem;
+        width: min(340px, calc(100vw - 5rem));
+        z-index: 999999;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.5rem;
+        background: var(--background-color, #ffffff);
+    }
+    .st-key-lp_account_topbar [data-testid="stHorizontalBlock"] {
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        align-items: center !important;
+        gap: 0.6rem !important;
+    }
+    .st-key-lp_account_topbar [data-testid="stColumn"]:first-child {
+        flex: 1 1 0 !important;
+        min-width: 0 !important;
+        width: auto !important;
+    }
+    .st-key-lp_account_topbar [data-testid="stColumn"]:last-child {
+        flex: 0 0 76px !important;
+        min-width: 76px !important;
+        width: 76px !important;
+    }
+    .lp-account-name {
+        text-align: right;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        line-height: 2.5rem;
+    }
+    @media (max-width: 640px) {
+        .st-key-lp_account_topbar { right: 0.5rem; }
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    with st.container(key="lp_account_topbar"):
+        name_col, logout_col = st.columns([3, 1], vertical_alignment="center")
+        with name_col:
+            label = escape(str(current_user_label()), quote=True)
+            st.markdown(f'<div class="lp-account-name" title="{label}">👤 {label}</div>', unsafe_allow_html=True)
+        with logout_col:
+            if st.button("登出", key="lp_account_logout", use_container_width=True):
+                sign_out()
+                st.rerun()
+
 
 
 # =========================================================
