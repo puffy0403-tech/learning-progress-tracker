@@ -1,5 +1,6 @@
 import os
 import base64
+import io
 import re
 import json
 import math
@@ -77,6 +78,7 @@ def _store_auth_response(response):
         st.session_state["user_email"] = str(user.email or "")
         metadata = getattr(user, "user_metadata", None) or {}
         st.session_state["display_name"] = str(metadata.get("display_name", "")).strip()
+        st.session_state["profile_photo"] = metadata.get("profile_photo", "")
 
 
 def get_supabase():
@@ -96,7 +98,7 @@ def get_supabase():
             # Token/session is no longer valid.
             for key in (
                 "sb_access_token", "sb_refresh_token",
-                "user_id", "user_email", "display_name"
+                "user_id", "user_email", "display_name", "profile_photo"
             ):
                 st.session_state.pop(key, None)
             return _new_supabase_client()
@@ -166,7 +168,7 @@ def sign_out():
 
     for key in (
         "sb_access_token", "sb_refresh_token",
-        "user_id", "user_email", "display_name",
+        "user_id", "user_email", "display_name", "profile_photo",
         "generated_plan"
     ):
         st.session_state.pop(key, None)
@@ -398,58 +400,88 @@ def render_sidebar_menu():
 
 
 def render_account_sidebar():
-    """Display the account controls at the top right on every signed-in page."""
+    """Account photo, name and logout controls at the top right."""
     if not is_logged_in():
         return
     st.markdown("""
     <style>
     .st-key-lp_account_topbar {
-        position: fixed;
-        top: 0.4rem;
-        right: 1rem;
-        width: min(340px, calc(100vw - 5rem));
-        z-index: 999999;
-        padding: 0.25rem 0.5rem;
-        border-radius: 0.5rem;
+        position: fixed; top: 0.4rem; right: 1rem;
+        width: min(380px, calc(100vw - 4rem)); z-index: 999999;
+        padding: 0.25rem 0.5rem; border-radius: 0.5rem;
         background: var(--background-color, #ffffff);
     }
     .st-key-lp_account_topbar [data-testid="stHorizontalBlock"] {
-        flex-direction: row !important;
-        flex-wrap: nowrap !important;
-        align-items: center !important;
-        gap: 0.6rem !important;
+        flex-direction: row !important; flex-wrap: nowrap !important;
+        align-items: center !important; gap: 0.4rem !important;
     }
-    .st-key-lp_account_topbar [data-testid="stColumn"]:first-child {
+    .st-key-lp_account_topbar [data-testid="stColumn"] {
+        min-width: 0 !important; width: auto !important;
+    }
+    .st-key-lp_account_topbar [data-testid="stColumn"]:nth-child(1) {
+        flex: 0 0 36px !important;
+    }
+    .st-key-lp_account_topbar [data-testid="stColumn"]:nth-child(2) {
         flex: 1 1 0 !important;
-        min-width: 0 !important;
-        width: auto !important;
     }
-    .st-key-lp_account_topbar [data-testid="stColumn"]:last-child {
-        flex: 0 0 76px !important;
-        min-width: 76px !important;
-        width: 76px !important;
+    .st-key-lp_account_topbar [data-testid="stColumn"]:nth-child(3),
+    .st-key-lp_account_topbar [data-testid="stColumn"]:nth-child(4) {
+        flex: 0 0 64px !important;
     }
-    .lp-account-name {
-        text-align: right;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        line-height: 2.5rem;
-    }
-    @media (max-width: 640px) {
-        .st-key-lp_account_topbar { right: 0.5rem; }
-    }
+    .lp-profile-photo {width:36px;height:36px;border-radius:50%;object-fit:cover;display:block;}
+    .lp-account-name {overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:2.5rem;}
+    @media (max-width:640px) {.st-key-lp_account_topbar {right:0.5rem;}}
     </style>
     """, unsafe_allow_html=True)
     with st.container(key="lp_account_topbar"):
-        name_col, logout_col = st.columns([3, 1], vertical_alignment="center")
+        photo_col, name_col, upload_col, logout_col = st.columns([1, 4, 2, 2], vertical_alignment="center")
+        with photo_col:
+            photo = st.session_state.get("profile_photo", "")
+            if isinstance(photo, str) and photo.startswith("data:image/jpeg;base64,"):
+                st.markdown(f'<img class="lp-profile-photo" src="{escape(photo, quote=True)}" alt="個人照片">', unsafe_allow_html=True)
+            else:
+                st.markdown('<span aria-label="尚未設定照片">👤</span>', unsafe_allow_html=True)
         with name_col:
             label = escape(str(current_user_label()), quote=True)
-            st.markdown(f'<div class="lp-account-name" title="{label}">👤 {label}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="lp-account-name" title="{label}">{label}</div>', unsafe_allow_html=True)
+        with upload_col:
+            with st.popover("照片"):
+                st.write("上傳個人照片")
+                photo_file = st.file_uploader("選擇 JPG 或 PNG（最多 5 MB）", type=["jpg", "jpeg", "png"], key="plan_editor_profile_upload")
+                if st.button("儲存照片", disabled=photo_file is None, key="plan_editor_profile_save"):
+                    try:
+                        photo = prepare_profile_photo(photo_file.getvalue())
+                        client = get_supabase()
+                        if client is None or not is_logged_in():
+                            raise ValueError("請重新登入後再試。")
+                        client.auth.update_user({"data": {"profile_photo": photo}})
+                        st.session_state["profile_photo"] = photo
+                    except Exception as exc:
+                        st.error(f"照片儲存失敗：{exc}")
+                    else:
+                        st.rerun()
         with logout_col:
             if st.button("登出", key="lp_account_logout", use_container_width=True):
                 sign_out()
                 st.rerun()
+
+
+def prepare_profile_photo(data):
+    """Validate and resize an avatar; discard EXIF and other source metadata."""
+    from PIL import ImageOps
+    if len(data) > 5 * 1024 * 1024:
+        raise ValueError("照片不能超過 5 MB。")
+    with Image.open(io.BytesIO(data)) as original:
+        if original.format not in ("JPEG", "PNG"):
+            raise ValueError("請選擇 JPG 或 PNG 照片。")
+        if original.width * original.height > 20000000:
+            raise ValueError("照片尺寸過大，請縮小後再上傳。")
+        oriented = ImageOps.exif_transpose(original)
+        avatar = ImageOps.fit(oriented.convert("RGB"), (128, 128))
+        buffer = io.BytesIO()
+        avatar.save(buffer, format="JPEG", quality=80)
+    return "data:image/jpeg;base64," + base64.b64encode(buffer.getvalue()).decode("ascii")
+
 
 
 
