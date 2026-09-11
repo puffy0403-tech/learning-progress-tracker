@@ -67,4 +67,4 @@ else:
     
             st.subheader("編輯後儲存")
             render_plan_editor(plan, st.session_state.get(draft_key+"_start", next_week_start),
-                               "ai_" + str(st.session_state.get(draft_key+"_version", 0)))
+                               "ai_" + str(st.session_state.get(draft_key+"_version", 0)), ask_latest=True)

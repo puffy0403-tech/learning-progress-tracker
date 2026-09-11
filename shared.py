@@ -939,7 +939,37 @@ def serialize_editable_plan(rows, notes):
     return start, "\n".join(lines) + "\n<!-- learnpilot-v1:" + payload + " -->"
 
 
-def render_plan_editor(text, start, key, record=None):
+def render_latest_plan_confirmation(key):
+    """Keep the post-save choice available across Streamlit reruns."""
+    pending_key = key + "_latest_pending"
+    result_key = key + "_latest_result"
+    plan_id = st.session_state.get(pending_key)
+    if plan_id is None:
+        if st.session_state.get(result_key):
+            st.success(st.session_state[result_key])
+        return
+    with st.container(border=True):
+        st.write("是否將這個計畫設為我的最新計畫？")
+        yes_col, no_col = st.columns(2)
+        with yes_col:
+            if st.button("設為最新計畫", type="primary", key=key+"_latest_yes", use_container_width=True):
+                try:
+                    designate_latest_plan(plan_id)
+                except Exception as exc:
+                    st.error(f"計畫已儲存，但設為最新計畫失敗：{exc}。請重試。")
+                else:
+                    st.session_state["plan_draft_home_" + current_user_id()] = plan_id
+                    st.session_state.pop(pending_key, None)
+                    st.session_state[result_key] = "已設為我的最新計畫，回首頁即可查看。"
+                    st.rerun()
+        with no_col:
+            if st.button("暫時不要", key=key+"_latest_no", use_container_width=True):
+                st.session_state.pop(pending_key, None)
+                st.session_state[result_key] = "計畫已保留，未變更最新計畫的指定。"
+                st.rerun()
+
+
+def render_plan_editor(text, start, key, record=None, ask_latest=False):
     key = f"plan_editor_{current_user_id()}_{key}"
     try:
         rows, notes = editable_plan_data(text, start)
@@ -974,12 +1004,20 @@ def render_plan_editor(text, start, key, record=None):
                 else:
                     saved = save_plan(new_start, content)
                 st.session_state[key+"_saved"] = saved
-            st.session_state["plan_draft_home_" + current_user_id()] = saved["id"]
-            st.success("計畫已儲存。回到首頁即可看到更新，也可到『我的下週學習日曆』再次編輯。")
+            if ask_latest and record is None:
+                st.session_state[key+"_latest_pending"] = saved["id"]
+                st.session_state.pop(key+"_latest_result", None)
+                st.success("新計畫已儲存。")
+            else:
+                st.session_state["plan_draft_home_" + current_user_id()] = saved["id"]
+                st.success("計畫已儲存。回到首頁即可看到更新，也可到『我的下週學習日曆』再次編輯。")
             if record:
                 st.rerun()
         except Exception as exc:
             st.error(f"儲存失敗，編輯內容仍保留：{exc}")
+    if ask_latest and record is None:
+        render_latest_plan_confirmation(key)
+
 
 
 def load_week_plans(start):
