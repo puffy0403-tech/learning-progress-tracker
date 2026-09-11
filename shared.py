@@ -46,11 +46,6 @@ st.set_page_config(
 # =========================================================
 # Supabase configuration / authentication
 # =========================================================
-def normalize_ai_display_text(text):
-    """避免 AI 的 ~~ 被 Markdown 解讀成刪除線。"""
-    return str(text or "").replace("~~", "～")
-
-
 def _secret(name, default=""):
     try:
         value = st.secrets.get(name, default)
@@ -582,6 +577,33 @@ def build_rule_based_plan(goals, logs):
 
 
 
+def normalize_ai_display_text(text):
+    """Normalize numeric ranges for display without changing stored plan data.
+
+    Preserve code, HTML/comments (including structured metadata), link targets,
+    escaped tildes, and ordinary Markdown strikethrough.
+    """
+    text = str(text or "")
+    protected = re.compile(
+        r"(?m:^[ \t]{0,3}(?P<fence>`{3,}|~{3,})[^\n]*\n[\s\S]*?^[ \t]{0,3}(?P=fence)[ \t]*(?=\n|$))"
+        r"|(?P<ticks>`+)[^`]*?(?P=ticks)"
+        r"|<!--[\s\S]*?(?:-->|$)"
+        r"|<[^>\n]*>"
+        r"|!?\[[^]\n]*\]\([^\n]*?\)"
+        r"|(?m:^[ \t]{0,3}\[[^]\n]+\]:[^\n]*)"
+        r"|https?://[^\s<>]+"
+    )
+    numeric_range = re.compile(r"(?<=\d)([ \t]*)~{1,2}([ \t]*)(?=\d)")
+    parts = []
+    end = 0
+    for match in protected.finditer(text):
+        parts.append(numeric_range.sub(r"\1～\2", text[end:match.start()]))
+        parts.append(match.group())
+        end = match.end()
+    parts.append(numeric_range.sub(r"\1～\2", text[end:]))
+    return "".join(parts)
+
+
 def render_ai_plan_text(plan_text):
     """顯示 AI 計畫，三個主要區段使用 LearnPilot 自訂 PNG 圖示。"""
     plan_text = normalize_ai_display_text(plan_text)
@@ -610,7 +632,7 @@ def render_ai_plan_text(plan_text):
     for kind, value in blocks:
         if kind == "text":
             if value.strip():
-                st.markdown(value)
+                st.markdown(normalize_ai_display_text(value))
         else:
             icon_path = os.path.join(os.path.dirname(__file__), "assets", icon_map[value])
             c1, c2 = st.columns([0.07, 0.93], vertical_alignment="center")
@@ -645,8 +667,6 @@ def build_ai_plan(goals, logs):
     )
 
     prompt = f"""
-所有數值範圍與時間範圍請使用「～」（例如 2～3 小時、19:30～22:00），不要使用「~~」，避免 Markdown 刪除線。
-
 你是一個個人學習規劃助手。請依照使用者的學習目標與本週學習紀錄，
 產生「下一週」可執行的學習計畫。
 
@@ -656,11 +676,12 @@ def build_ai_plan(goals, logs):
 3. 再安排週一到週日的學習內容與時數。
 4. 每日不要塞太多工作。
 5. 若本週某科目落後，下一週稍微提高該科目比重。
-6. 最後給 2~3 點調整建議。\n7. 三個主要段落標題請使用「本週學習狀況分析」、「下一週學習計畫」、「學習調整建議」，標題前不要加入 Emoji 或其他圖示。
+6. 最後給 2～3 點調整建議。\n7. 三個主要段落標題請使用「本週學習狀況分析」、「下一週學習計畫」、「學習調整建議」，標題前不要加入 Emoji 或其他圖示。
 8. 每一個實際排程都必須獨立一行，並嚴格使用以下格式：
    - 週一：英文｜1.0 小時｜單字複習
    - 週二：Python｜1.5 小時｜完成資料分析練習
    一週七天都可以安排，也可以保留休息日。
+9. 所有數值與時間範圍一律使用全形波浪號「～」，不要使用 ~ 或 ~~。例如：2～3 小時、7:30～10:30。
 
 學習目標：
 {goals_text}
@@ -810,7 +831,7 @@ def render_desktop_week_calendar(plan_text, next_week_start):
                     if item["content"]:
                         detail += (
                             f"<br><span style='font-size:.78rem;opacity:.72'>"
-                            f"{escape(str(item['content']))}</span>"
+                            f"{escape(normalize_ai_display_text(item['content']))}</span>"
                         )
 
                     st.markdown(
@@ -823,7 +844,7 @@ def render_desktop_week_calendar(plan_text, next_week_start):
                             margin-bottom:7px;
                             min-height:72px;
                         ">
-                            <div style="font-weight:650;font-size:.9rem;">{escape(str(item['subject']))}</div>
+                            <div style="font-weight:650;font-size:.9rem;">{escape(normalize_ai_display_text(item['subject']))}</div>
                             <div style="font-size:.82rem;margin-top:4px;">{detail}</div>
                         </div>
                         """,
@@ -1242,8 +1263,8 @@ def render_week_calendar(plan_text, next_week_start):
             parts.append('<div class="lp-day-detail">休息 / 彈性</div>')
         else:
             for _, row in rows.iterrows():
-                subject = escape(str(row["subject"]))
-                content = escape(str(row["content"]))
+                subject = escape(normalize_ai_display_text(row["subject"]))
+                content = escape(normalize_ai_display_text(row["content"]))
                 minutes = float(row["hours"])*60
                 parts.append(f'<div class="lp-day-item"><strong>{subject}</strong><div>{minutes:g} 分鐘</div><div class="lp-day-detail">{content}</div></div>')
         parts.append('</div>')
