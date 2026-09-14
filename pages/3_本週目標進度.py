@@ -20,10 +20,18 @@ goal_rate = (weekly_study_hours / weekly_goal_hours * 100) if weekly_goal_hours 
 remaining_total = max(weekly_goal_hours - weekly_study_hours, 0)
 
 c1, c2, c3, c4 = st.columns(4)
-c1.metric("本週累積", f"{weekly_study_hours:.1f} 小時")
-c2.metric("本週目標", f"{weekly_goal_hours:.1f} 小時")
-c3.metric("目標達成率", f"{goal_rate:.0f}%")
-c4.metric("剩餘時數", f"{remaining_total:.1f} 小時")
+with c1:
+    with st.container(border=True):
+        st.metric("本週累積", f"{weekly_study_hours:.1f} 小時")
+with c2:
+    with st.container(border=True):
+        st.metric("本週目標", f"{weekly_goal_hours:.1f} 小時")
+with c3:
+    with st.container(border=True):
+        st.metric("目標達成率", f"{goal_rate:.0f}%")
+with c4:
+    with st.container(border=True):
+        st.metric("剩餘時數", f"{remaining_total:.1f} 小時")
 st.progress(min(goal_rate / 100, 1.0))
 
 st.subheader(" 各科目目標進度")
