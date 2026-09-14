@@ -987,6 +987,11 @@ def parse_plan_calendar(plan_text, start_date):
     return pd.DataFrame(rows)
 
 
+def calendar_today():
+    """Use Taiwan's calendar date rather than the deployment server's date."""
+    return datetime.now(timezone(timedelta(hours=8))).date()
+
+
 def render_desktop_week_calendar(plan_text, next_week_start):
     cal = parse_plan_calendar(plan_text, next_week_start)
 
@@ -996,11 +1001,16 @@ def render_desktop_week_calendar(plan_text, next_week_start):
         f"{(next_week_start + timedelta(days=6)).strftime('%Y/%m/%d')}"
     )
 
+    today_date = calendar_today()
     cols = st.columns(7)
     weekday_labels = ["週一", "週二", "週三", "週四", "週五", "週六", "週日"]
 
     for i, col in enumerate(cols):
         current_date = next_week_start + timedelta(days=i)
+        is_today = current_date == today_date
+        header_style = "background:#dbeafe;color:#163b70;border:2px solid #2563eb;" if is_today else ""
+        item_style = "background:#dbeafe;color:#163b70;border-left:4px solid #2563eb;" if is_today else ""
+        today_label = " · 今天" if is_today else ""
         with col:
             st.markdown(
                 f"""
@@ -1010,8 +1020,9 @@ def render_desktop_week_calendar(plan_text, next_week_start):
                     border:1px solid rgba(128,128,128,.25);
                     border-radius:12px;
                     margin-bottom:8px;
+                    {header_style}
                 ">
-                    <div style="font-weight:700;">{weekday_labels[i]}</div>
+                    <div style="font-weight:700;">{weekday_labels[i]}{today_label}</div>
                     <div style="font-size:0.85rem; opacity:.7;">{current_date.strftime('%m/%d')}</div>
                 </div>
                 """,
@@ -1040,6 +1051,7 @@ def render_desktop_week_calendar(plan_text, next_week_start):
                             background:rgba(128,128,128,.08);
                             margin-bottom:7px;
                             min-height:72px;
+                            {item_style}
                         ">
                             <div style="font-weight:650;font-size:.9rem;">{escape(normalize_ai_display_text(item['subject']))}</div>
                             <div style="font-size:.82rem;margin-top:4px;">{detail}</div>
@@ -1490,9 +1502,13 @@ def render_week_calendar(plan_text, next_week_start):
         f'<h3><img src="data:image/png;base64,{icon}" alt="" style="width:32px;vertical-align:middle;margin-right:8px;">學習日曆</h3>',
         f'<p>{next_week_start:%Y/%m/%d} ～ {next_week_start + timedelta(days=6):%Y/%m/%d}</p>'
     ]
+    today_date = calendar_today()
     for i, weekday in enumerate(["週一","週二","週三","週四","週五","週六","週日"]):
         day = next_week_start + timedelta(days=i)
-        parts.append(f'<div class="lp-day-card"><div class="lp-day-title">{weekday} · {day:%m/%d}</div>')
+        is_today = day == today_date
+        today_style = "background:#dbeafe;color:#163b70;border:2px solid #2563eb;" if is_today else ""
+        today_label = " · 今天" if is_today else ""
+        parts.append(f'<div class="lp-day-card" style="{today_style}"><div class="lp-day-title">{weekday} · {day:%m/%d}{today_label}</div>')
         rows = cal[cal["date"] == day] if not cal.empty else pd.DataFrame()
         if rows.empty:
             parts.append('<div class="lp-day-detail">休息 / 彈性</div>')
