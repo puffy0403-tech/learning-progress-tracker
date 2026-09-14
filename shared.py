@@ -446,7 +446,7 @@ def render_account_sidebar():
     </style>
     """, unsafe_allow_html=True)
     with st.container(key="lp_account_topbar"):
-        photo_col, name_col, logout_col = st.columns([1, 4, 2], vertical_alignment="center")
+        photo_col, name_col = st.columns([1, 4], vertical_alignment="center")
         with photo_col:
             photo = st.session_state.get("profile_photo", "")
             # Use a real Streamlit button for keyboard and click support.
@@ -484,10 +484,9 @@ def render_account_sidebar():
         with name_col:
             label = escape(str(current_user_label()), quote=True)
             st.markdown(f'<div class="lp-account-name" title="{label}">{label}</div>', unsafe_allow_html=True)
-        with logout_col:
-            if st.button("登出", key="lp_account_logout", use_container_width=True):
-                sign_out()
-                st.rerun()
+        if st.button("登出", key="lp_account_logout", use_container_width=True):
+            sign_out()
+            st.rerun()
     # Render outside the fixed account bar so the uploader stays in normal flow.
     if st.session_state.get("plan_editor_profile_open", False):
         with st.container(border=True):
