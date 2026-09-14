@@ -194,11 +194,21 @@ def render_feature_title(title, icon_filename, caption=None, icon_width=58):
 
 
 def render_brand_header(subtitle=""):
-    """Keep shared styling; the brand artwork is now part of the background."""
     hide_streamlit_toolbar()
-    if subtitle:
-        st.caption(subtitle)
+    """顯示 LearnPilot 圖示 + 系統名稱，可在首頁與各功能頁重複使用。"""
+    icon_path = os.path.join(os.path.dirname(__file__), "assets", "learnpilot_icon.png")
 
+    brand_col1, brand_col2 = st.columns([0.55, 5.45], vertical_alignment="center")
+    with brand_col1:
+        if os.path.exists(icon_path):
+            st.image(icon_path, width=78)
+    with brand_col2:
+        st.markdown(
+            "<h1 style='margin:0; padding:0;'>LearnPilot</h1>",
+            unsafe_allow_html=True,
+        )
+        if subtitle:
+            st.caption(subtitle)
 
 
 def render_auth():
@@ -1391,20 +1401,6 @@ def hide_streamlit_toolbar():
 def render_responsive_styles():
     st.markdown("""
     <style>
-    /* Soft blue tint over the current theme background. */
-    [data-testid="stAppViewContainer"] {
-        background-image:
-            linear-gradient(90deg, rgba(59,130,246,.42) 0%, rgba(96,165,250,.26) 45%, rgba(219,234,254,.08) 100%);
-        background-repeat: no-repeat;
-        background-size: cover;
-        min-height: 100vh;
-    }
-    [data-testid="stHeader"] {
-        background: transparent;
-    }
-    [data-testid="stSidebar"] {
-        background-image: linear-gradient(90deg, rgba(59,130,246,.38), rgba(96,165,250,.26));
-    }
     .lp-mobile-calendar {display:none;}
     @media (max-width: 640px) {
         .st-key-desktop_calendar {display:none !important;}
@@ -1474,37 +1470,6 @@ def render_responsive_styles():
     }
     </style>
     """, unsafe_allow_html=True)
-    logo_path = os.path.join(_BASE_DIR, "assets", "learnpilot_icon.png")
-    if os.path.exists(logo_path):
-        with open(logo_path, "rb") as logo_file:
-            logo_data = base64.b64encode(logo_file.read()).decode("ascii")
-        st.markdown(f"""
-        <style>
-        [data-testid="stMain"] {{
-            position: relative;
-            isolation: isolate;
-        }}
-        [data-testid="stMain"]::before {{
-            content: "";
-            position: fixed;
-            right: 4vw;
-            bottom: 5vh;
-            width: clamp(180px, 30vw, 430px);
-            height: clamp(180px, 30vw, 430px);
-            background: url("data:image/png;base64,{logo_data}") center / contain no-repeat;
-            opacity: 0.09;
-            pointer-events: none;
-            z-index: -1;
-        }}
-        @media (max-width: 640px) {{
-            [data-testid="stMain"]::before {{
-                width: 180px; height: 180px;
-                right: 1rem; bottom: 2rem; opacity: 0.06;
-            }}
-        }}
-        </style>
-        """, unsafe_allow_html=True)
-
 
 
 def render_week_calendar(plan_text, next_week_start):
