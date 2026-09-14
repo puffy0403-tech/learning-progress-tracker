@@ -375,7 +375,7 @@ def render_sidebar_menu():
                 ("AI Study Plan", "ai_plan.png", "pages/1_AI_Study_Plan.py"),
                 ("學習紀錄管理", "study_record.png", "pages/2_學習紀錄管理.py"),
                 ("本週目標進度", "progress.png", "pages/3_本週目標進度.py"),
-                ("我的下週學習日曆", "calendar.png", "pages/4_我的下週學習日曆.py"),
+                ("我的學習日曆", "calendar.png", "pages/4_我的下週學習日曆.py"),
             ]
 
             for label, icon_file, page_path in menu_items:
@@ -1205,7 +1205,7 @@ def render_plan_editor(text, start, key, record=None, ask_latest=False):
                 st.success("新計畫已儲存。")
             else:
                 st.session_state["plan_draft_home_" + current_user_id()] = saved["id"]
-                st.success("計畫已儲存。回到首頁即可看到更新，也可到『我的下週學習日曆』再次編輯。")
+                st.success("計畫已儲存。回到首頁即可看到更新，也可到『我的學習日曆』再次編輯。")
             if record:
                 st.rerun()
         except Exception as exc:
