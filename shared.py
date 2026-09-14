@@ -212,10 +212,21 @@ def render_brand_header(subtitle=""):
 
 
 def render_auth():
+    """Keep login widgets in a disposable region, separate from account UI."""
     hide_streamlit_toolbar()
-    """Login / registration screen. Returns True when logged in."""
+    auth_slot = st.empty()
     if is_logged_in():
+        auth_slot.empty()
+        # Hide any stale auth elements while Streamlit replaces the old page.
+        st.markdown("<style>.st-key-lp_auth_panel {display:none !important;}</style>", unsafe_allow_html=True)
         return True
+    st.markdown("<style>.st-key-lp_auth_panel {display:block !important;}</style>", unsafe_allow_html=True)
+    with auth_slot.container():
+        with st.container(key="lp_auth_panel"):
+            return _render_auth_form(auth_slot)
+
+
+def _render_auth_form(auth_slot):
     icon_path = os.path.join(os.path.dirname(__file__), "assets", "learnpilot_icon.png")
     _, auth_brand, _ = st.columns([1.15, 1.7, 1.15])
     with auth_brand:
@@ -259,7 +270,7 @@ def render_auth():
                 else:
                     try:
                         sign_in(email, password)
-                        st.success("登入成功。")
+                        auth_slot.empty()
                         st.rerun()
                     except Exception as exc:
                         st.error(f"登入失敗：{exc}")
@@ -283,7 +294,7 @@ def render_auth():
                     try:
                         response = sign_up(email, password, display_name)
                         if getattr(response, "session", None) is not None:
-                            st.success("註冊成功，已自動登入。")
+                            auth_slot.empty()
                             st.rerun()
                         else:
                             st.success("註冊成功！請先到 Email 完成驗證，再回來登入。")
