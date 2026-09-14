@@ -773,6 +773,8 @@ def render_plan_day_cards(text):
                 segments.append((current_day, "\n".join(lines)))
             lines = []
             current_day = day
+        if match:
+            line = "- " + line[match.end():].lstrip()
         lines.append(line)
     if lines:
         segments.append((current_day, "\n".join(lines)))
