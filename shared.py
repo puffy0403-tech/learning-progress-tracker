@@ -193,9 +193,14 @@ def render_feature_title(title, icon_filename, caption=None, icon_width=58):
             st.caption(caption)
 
 
-def render_brand_header(subtitle=""):
+def render_brand_header(subtitle="", show_brand=None):
     hide_streamlit_toolbar()
     """顯示 LearnPilot 圖示 + 系統名稱，可在首頁與各功能頁重複使用。"""
+    # Existing home page passes its encouragement subtitle; feature pages do not.
+    if show_brand is None:
+        show_brand = bool(subtitle)
+    if not show_brand:
+        return
     icon_path = os.path.join(os.path.dirname(__file__), "assets", "learnpilot_icon.png")
 
     brand_col1, brand_col2 = st.columns([0.55, 5.45], vertical_alignment="center")
