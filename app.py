@@ -4,7 +4,7 @@ from shared import *
 if not render_auth():
     st.stop()
 render_sidebar_menu()
-render_account_sidebar()
+
 render_brand_header(daily_encouragement())
 
 goals = load_goals()

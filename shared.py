@@ -329,6 +329,8 @@ def render_sidebar_menu():
     )
 
     with st.sidebar:
+        render_account_sidebar()
+        st.divider()
         # LearnPilot 品牌
         sidebar_icon = os.path.join(
             os.path.dirname(__file__), "assets", "learnpilot_icon.png"
@@ -417,10 +419,10 @@ def render_account_sidebar():
     st.markdown("""
     <style>
     .st-key-lp_account_topbar {
-        position: fixed; top: 0.4rem; left: 3.5rem; right: auto;
-        width: min(280px, calc(100vw - 4rem)); z-index: 999999;
+        position: relative;
+        width: 100%;
         padding: 0.25rem 0.5rem; border-radius: 0.5rem;
-        background: var(--background-color, #ffffff);
+        background: transparent;
     }
     .st-key-lp_account_topbar [data-testid="stHorizontalBlock"] {
         flex-direction: row !important; flex-wrap: nowrap !important;
@@ -440,7 +442,7 @@ def render_account_sidebar():
     }
     .lp-profile-photo {width:36px;height:36px;border-radius:50%;object-fit:cover;display:block;}
     .lp-account-name {overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:2.5rem;}
-    @media (max-width:640px) {.st-key-lp_account_topbar {left:3.5rem;right:auto;}}
+    
     </style>
     """, unsafe_allow_html=True)
     with st.container(key="lp_account_topbar"):

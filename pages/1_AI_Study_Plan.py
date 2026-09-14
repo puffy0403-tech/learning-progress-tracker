@@ -3,7 +3,7 @@ from shared import *
 # ---------- Supabase authentication ----------
 login_required()
 render_sidebar_menu()
-render_account_sidebar()
+
 render_brand_header()
 render_feature_title('AI Study Plan', 'ai_plan.png', daily_encouragement())
 render_home_link()
