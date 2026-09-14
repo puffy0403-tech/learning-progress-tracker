@@ -1401,6 +1401,21 @@ def hide_streamlit_toolbar():
 def render_responsive_styles():
     st.markdown("""
     <style>
+    /* Soft blue tint over the current theme background. */
+    [data-testid="stAppViewContainer"] {
+        background-image:
+            radial-gradient(ellipse at 100% 0%, rgba(96,165,250,.16), transparent 58%),
+            linear-gradient(135deg, rgba(147,197,253,.20) 0%, rgba(219,234,254,.08) 55%, rgba(125,211,252,.12) 100%);
+        background-repeat: no-repeat;
+        background-size: cover;
+        min-height: 100vh;
+    }
+    [data-testid="stHeader"] {
+        background: transparent;
+    }
+    [data-testid="stSidebar"] {
+        background-image: linear-gradient(180deg, rgba(147,197,253,.20), rgba(191,219,254,.06));
+    }
     .lp-mobile-calendar {display:none;}
     @media (max-width: 640px) {
         .st-key-desktop_calendar {display:none !important;}
