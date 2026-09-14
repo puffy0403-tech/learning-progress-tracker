@@ -740,6 +740,49 @@ def normalize_ai_display_text(text):
     return "".join(parts)
 
 
+def render_plan_day_cards(text):
+    """Frame consecutive daily schedule entries without changing stored text."""
+    text = normalize_ai_display_text(text)
+    day_pattern = re.compile(r"^\s*(?:[-*+•]\s+|\d+[.)]\s+)?(?:\*\*)?(?:週|星期)([一二三四五六日天])(?:\*\*)?\s*[：:]")
+    segments = []
+    current_day = None
+    lines = []
+    fence = None
+    for line in text.splitlines():
+        stripped = line.lstrip()
+        fence_match = re.match(r"(`{3,}|~{3,})", stripped)
+        if fence_match:
+            marker = fence_match.group(1)
+            if fence is None:
+                fence = marker
+            elif marker[0] == fence[0] and len(marker) >= len(fence):
+                fence = None
+            match = None
+        else:
+            match = None if fence else day_pattern.match(line)
+        day = ("週" + match.group(1).replace("天", "日")) if match else None
+        if not line.strip() and current_day is not None:
+            lines.append(line)
+            continue
+        if day != current_day:
+            if lines:
+                segments.append((current_day, "\n".join(lines)))
+            lines = []
+            current_day = day
+        lines.append(line)
+    if lines:
+        segments.append((current_day, "\n".join(lines)))
+    for day, content in segments:
+        if not content.strip():
+            continue
+        if day:
+            with st.container(border=True):
+                st.markdown(f"**{day}**")
+                st.markdown(content)
+        else:
+            st.markdown(content)
+
+
 def render_ai_plan_text(plan_text):
     """Render AI sections with scoped protection against strikethrough."""
     st.markdown("""
@@ -780,7 +823,7 @@ def render_ai_plan_text(plan_text):
         for kind, value in blocks:
             if kind == "text":
                 if value.strip():
-                    st.markdown(normalize_ai_display_text(value))
+                    render_plan_day_cards(value)
             else:
                 icon_path = os.path.join(os.path.dirname(__file__), "assets", icon_map[value])
                 c1, c2 = st.columns([0.07, 0.93], vertical_alignment="center")
