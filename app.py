@@ -25,10 +25,18 @@ if not logs.empty:
     today_minutes = int(tmp.loc[tmp["study_date"] == today, "minutes"].sum())
 
 c1, c2, c3, c4 = st.columns(4)
-c1.metric("今日學習", f"{today_minutes / 60:.1f} 小時")
-c2.metric("本週累積", f"{weekly_study_hours:.1f} 小時")
-c3.metric("本週目標", f"{weekly_goal_hours:.1f} 小時")
-c4.metric("目標達成率", f"{goal_rate:.0f}%")
+with c1:
+    with st.container(border=True):
+        st.metric("今日學習", f"{today_minutes / 60:.1f} 小時")
+with c2:
+    with st.container(border=True):
+        st.metric("本週累積", f"{weekly_study_hours:.1f} 小時")
+with c3:
+    with st.container(border=True):
+        st.metric("本週目標", f"{weekly_goal_hours:.1f} 小時")
+with c4:
+    with st.container(border=True):
+        st.metric("目標達成率", f"{goal_rate:.0f}%")
 st.progress(min(goal_rate / 100, 1.0))
 st.caption(f"本週：{week_start} ～ {week_end}")
 
