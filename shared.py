@@ -194,21 +194,11 @@ def render_feature_title(title, icon_filename, caption=None, icon_width=58):
 
 
 def render_brand_header(subtitle=""):
+    """Keep shared styling; the brand artwork is now part of the background."""
     hide_streamlit_toolbar()
-    """顯示 LearnPilot 圖示 + 系統名稱，可在首頁與各功能頁重複使用。"""
-    icon_path = os.path.join(os.path.dirname(__file__), "assets", "learnpilot_icon.png")
+    if subtitle:
+        st.caption(subtitle)
 
-    brand_col1, brand_col2 = st.columns([0.55, 5.45], vertical_alignment="center")
-    with brand_col1:
-        if os.path.exists(icon_path):
-            st.image(icon_path, width=78)
-    with brand_col2:
-        st.markdown(
-            "<h1 style='margin:0; padding:0;'>LearnPilot</h1>",
-            unsafe_allow_html=True,
-        )
-        if subtitle:
-            st.caption(subtitle)
 
 
 def render_auth():
@@ -1404,8 +1394,8 @@ def render_responsive_styles():
     /* Soft blue tint over the current theme background. */
     [data-testid="stAppViewContainer"] {
         background-image:
-            radial-gradient(ellipse at 100% 0%, rgba(96,165,250,.16), transparent 58%),
-            linear-gradient(135deg, rgba(147,197,253,.20) 0%, rgba(219,234,254,.08) 55%, rgba(125,211,252,.12) 100%);
+            radial-gradient(ellipse at 100% 0%, rgba(59,130,246,.42), transparent 68%),
+            linear-gradient(135deg, rgba(96,165,250,.38) 0%, rgba(191,219,254,.18) 48%, rgba(56,189,248,.32) 100%);
         background-repeat: no-repeat;
         background-size: cover;
         min-height: 100vh;
@@ -1414,7 +1404,7 @@ def render_responsive_styles():
         background: transparent;
     }
     [data-testid="stSidebar"] {
-        background-image: linear-gradient(180deg, rgba(147,197,253,.20), rgba(191,219,254,.06));
+        background-image: linear-gradient(180deg, rgba(96,165,250,.32), rgba(191,219,254,.14));
     }
     .lp-mobile-calendar {display:none;}
     @media (max-width: 640px) {
@@ -1485,6 +1475,37 @@ def render_responsive_styles():
     }
     </style>
     """, unsafe_allow_html=True)
+    logo_path = os.path.join(_BASE_DIR, "assets", "learnpilot_icon.png")
+    if os.path.exists(logo_path):
+        with open(logo_path, "rb") as logo_file:
+            logo_data = base64.b64encode(logo_file.read()).decode("ascii")
+        st.markdown(f"""
+        <style>
+        [data-testid="stMain"] {{
+            position: relative;
+            isolation: isolate;
+        }}
+        [data-testid="stMain"]::before {{
+            content: "";
+            position: fixed;
+            right: 4vw;
+            bottom: 5vh;
+            width: clamp(180px, 30vw, 430px);
+            height: clamp(180px, 30vw, 430px);
+            background: url("data:image/png;base64,{logo_data}") center / contain no-repeat;
+            opacity: 0.09;
+            pointer-events: none;
+            z-index: -1;
+        }}
+        @media (max-width: 640px) {{
+            [data-testid="stMain"]::before {{
+                width: 180px; height: 180px;
+                right: 1rem; bottom: 2rem; opacity: 0.06;
+            }}
+        }}
+        </style>
+        """, unsafe_allow_html=True)
+
 
 
 def render_week_calendar(plan_text, next_week_start):
