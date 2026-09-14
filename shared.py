@@ -348,13 +348,12 @@ def render_sidebar_menu():
                 st.image(sidebar_icon, width=56)
         with brand_col2:
             st.markdown(
-                "<h3 style='margin:0; padding:0;'>LearnPilot</h3>",
+                "<h3 style='margin:0; padding:0;'>功能列表</h3>",
                 unsafe_allow_html=True,
             )
 
         # 圖片式功能列表
         with st.container(border=True):
-            st.caption("功能列表")
             # 首頁：使用 assets/app.png 作為功能列表圖片
             home_icon = os.path.join(
                 os.path.dirname(__file__), "assets", "app.png"
