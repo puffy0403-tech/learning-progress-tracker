@@ -1019,8 +1019,7 @@ def render_desktop_week_calendar(plan_text, next_week_start):
                     padding:10px 6px;
                     border:1px solid rgba(128,128,128,.25);
                     border-radius:12px;
-                    margin-bottom:8px;
-                    {header_style}
+                    margin-bottom:8px;{header_style}
                 ">
                     <div style="font-weight:700;">{weekday_labels[i]}{today_label}</div>
                     <div style="font-size:0.85rem; opacity:.7;">{current_date.strftime('%m/%d')}</div>
@@ -1050,8 +1049,7 @@ def render_desktop_week_calendar(plan_text, next_week_start):
                             border-radius:8px;
                             background:rgba(128,128,128,.08);
                             margin-bottom:7px;
-                            min-height:72px;
-                            {item_style}
+                            min-height:72px;{item_style}
                         ">
                             <div style="font-weight:650;font-size:.9rem;">{escape(normalize_ai_display_text(item['subject']))}</div>
                             <div style="font-size:.82rem;margin-top:4px;">{detail}</div>
