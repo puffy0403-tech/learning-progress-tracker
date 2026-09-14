@@ -1394,8 +1394,7 @@ def render_responsive_styles():
     /* Soft blue tint over the current theme background. */
     [data-testid="stAppViewContainer"] {
         background-image:
-            radial-gradient(ellipse at 100% 0%, rgba(59,130,246,.42), transparent 68%),
-            linear-gradient(135deg, rgba(96,165,250,.38) 0%, rgba(191,219,254,.18) 48%, rgba(56,189,248,.32) 100%);
+            linear-gradient(90deg, rgba(59,130,246,.42) 0%, rgba(96,165,250,.26) 45%, rgba(219,234,254,.08) 100%);
         background-repeat: no-repeat;
         background-size: cover;
         min-height: 100vh;
@@ -1404,7 +1403,7 @@ def render_responsive_styles():
         background: transparent;
     }
     [data-testid="stSidebar"] {
-        background-image: linear-gradient(180deg, rgba(96,165,250,.32), rgba(191,219,254,.14));
+        background-image: linear-gradient(90deg, rgba(59,130,246,.38), rgba(96,165,250,.26));
     }
     .lp-mobile-calendar {display:none;}
     @media (max-width: 640px) {
