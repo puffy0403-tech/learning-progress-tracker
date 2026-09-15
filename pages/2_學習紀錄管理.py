@@ -8,6 +8,10 @@ render_brand_header()
 render_feature_title('學習紀錄管理', 'study_record.png', daily_encouragement())
 render_home_link()
 
+edit_notice_key = "learning_log_edit_saved_notice_" + current_user_id()
+if st.session_state.pop(edit_notice_key, False):
+    st.toast("學習紀錄修改成功！", icon="✅")
+
 section = st.session_state.get("plan_draft_records_section_" + current_user_id(), "查看學習紀錄/編輯")
 if section in ("設定學習目標", "紀錄今日學習"):
     st.subheader(section)
@@ -53,7 +57,7 @@ else:
         if submitted:
             if edit_subject.strip():
                 update_log(selected_id, edit_date, edit_subject.strip(), edit_minutes, edit_note)
-                st.success("學習紀錄已更新。")
+                st.session_state[edit_notice_key] = True
                 st.rerun()
             else:
                 st.warning("科目不能留白。")
