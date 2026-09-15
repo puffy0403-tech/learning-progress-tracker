@@ -1202,9 +1202,11 @@ def render_plan_editor(text, start, key, record=None, ask_latest=False):
             if ask_latest and record is None:
                 st.session_state[key+"_latest_pending"] = saved["id"]
                 st.session_state.pop(key+"_latest_result", None)
+                st.toast("讀書計畫儲存成功！", icon="✅")
                 st.success("新計畫已儲存。")
             else:
                 st.session_state["plan_draft_home_" + current_user_id()] = saved["id"]
+                st.toast("讀書計畫儲存成功！", icon="✅")
                 st.success("計畫已儲存。回到首頁即可看到更新，也可到『我的學習日曆』再次編輯。")
             if record:
                 st.rerun()
