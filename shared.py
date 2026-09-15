@@ -303,6 +303,7 @@ def _render_auth_form(auth_slot):
                             st.rerun()
                         else:
                             st.success("註冊成功！請先到 Email 完成驗證，再回來登入。")
+                            st.toast("新增成功！", icon="✅")
                     except Exception as exc:
                         st.error(f"註冊失敗：{exc}")
 
