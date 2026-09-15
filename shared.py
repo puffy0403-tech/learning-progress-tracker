@@ -1174,7 +1174,10 @@ def render_plan_editor(text, start, key, record=None, ask_latest=False):
     if not rows:
         rows = [dict(date=start, subject="", minutes=60.0, content="")]
 
-    delete_notice_key = key + "_item_deleted_notice"
+    # 使用不會因計畫內容更新而改變的通知 key。
+    # 「我的學習日曆」會把計畫內容雜湊放進 editor key；
+    # 更新後雜湊改變，因此通知不能綁在 editor key 上。
+    delete_notice_key = "plan_item_deleted_notice_" + current_user_id()
     if st.session_state.pop(delete_notice_key, False):
         st.toast("學習項目刪除成功！", icon="✅")
         st.success("學習項目刪除成功！")
