@@ -1173,49 +1173,91 @@ def render_plan_editor(text, start, key, record=None, ask_latest=False):
         return
     if not rows:
         rows = [dict(date=start, subject="", minutes=60.0, content="")]
+
+    delete_notice_key = key + "_item_deleted_notice"
+    if st.session_state.pop(delete_notice_key, False):
+        st.toast("學習項目刪除成功！", icon="✅")
+        st.success("學習項目刪除成功！")
+
+    editor_rows = []
+    for row in rows:
+        item = dict(row)
+        item["delete"] = False
+        editor_rows.append(item)
+
     st.caption("")
     with st.form(key):
         edited = st.data_editor(
-            pd.DataFrame(rows), num_rows="dynamic", hide_index=True,
+            pd.DataFrame(editor_rows), num_rows="dynamic", hide_index=True,
             use_container_width=True, key=key+"_rows",
+            column_order=["delete", "date", "subject", "minutes", "content"],
             column_config={
+                "delete": st.column_config.CheckboxColumn("刪除", default=False),
                 "date": st.column_config.DateColumn("日期（星期依日期自動計算）", required=True),
                 "subject": st.column_config.TextColumn("科目 / 學習項目", required=True),
                 "minutes": st.column_config.NumberColumn("預計分鐘", min_value=1, max_value=1440, required=True),
                 "content": st.column_config.TextColumn("學習內容"),
             })
         edited_notes = st.text_area("分析、建議與其他原始文字", notes, key=key+"_notes")
-        submitted = st.form_submit_button("更新這份計畫" if record else "儲存新計畫", use_container_width=True)
+        submitted = st.form_submit_button(
+            "更新這份計畫" if record else "儲存新計畫",
+            use_container_width=True
+        )
+
     if submitted:
         try:
-            new_start, content = serialize_editable_plan(edited.to_dict("records"), edited_notes)
+            edited_records = edited.to_dict("records")
+            deleted_count = sum(bool(r.get("delete", False)) for r in edited_records)
+            kept_records = [
+                {k: v for k, v in r.items() if k != "delete"}
+                for r in edited_records
+                if not bool(r.get("delete", False))
+            ]
+
+            if not kept_records:
+                raise ValueError(
+                    "至少要保留一個學習項目；若要刪除整週計畫，"
+                    "請使用「刪除這一週的學習日曆」。"
+                )
+
+            new_start, content = serialize_editable_plan(kept_records, edited_notes)
+
             if record:
                 saved = update_plan(record["id"], new_start, content, record["content"])
             else:
-                # Repeated submission of the same draft updates its saved row.
                 saved = st.session_state.get(key+"_saved")
                 if saved:
                     saved = update_plan(saved["id"], new_start, content, saved["content"])
                 else:
                     saved = save_plan(new_start, content)
                 st.session_state[key+"_saved"] = saved
+
+            if deleted_count:
+                st.session_state[delete_notice_key] = True
+
             if ask_latest and record is None:
                 st.session_state[key+"_latest_pending"] = saved["id"]
                 st.session_state.pop(key+"_latest_result", None)
-                st.toast("讀書計畫儲存成功！", icon="✅")
-                st.success("新計畫已儲存。")
+                if not deleted_count:
+                    st.toast("讀書計畫儲存成功！", icon="✅")
+                    st.success("新計畫已儲存。")
             else:
                 st.session_state["plan_draft_home_" + current_user_id()] = saved["id"]
-                st.toast("讀書計畫儲存成功！", icon="✅")
-                st.success("計畫已儲存。回到首頁即可看到更新，也可到『我的學習日曆』再次編輯。")
-            if record:
+                if not deleted_count:
+                    st.toast("讀書計畫儲存成功！", icon="✅")
+                    st.success(
+                        "計畫已儲存。回到首頁即可看到更新，"
+                        "也可到『我的學習日曆』再次編輯。"
+                    )
+
+            if record or deleted_count:
                 st.rerun()
+
         except Exception as exc:
             st.error(f"儲存失敗，編輯內容仍保留：{exc}")
+
     if ask_latest and record is None:
         render_latest_plan_confirmation(key)
-
-
 
 def load_week_plans(start):
     """Read the signed-in user's selected week directly, without cached content."""
