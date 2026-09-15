@@ -19,8 +19,18 @@ if plans:
     active = designated_plan(plans)
     if active:
         st.caption(f"目前最新讀書計畫：#{active['id']}｜{active['week_start']} 當週")
-    selected_id = st.selectbox("選擇已儲存計畫", [r["id"] for r in plans],
-                              format_func=lambda value: next(f"#{r['id']}｜{r['week_start']} 當週" for r in plans if r["id"] == value))
+    plan_ids = [r["id"] for r in plans]
+    default_index = plan_ids.index(active["id"]) if active and active["id"] in plan_ids else 0
+
+    selected_id = st.selectbox(
+        "選擇已儲存計畫",
+        plan_ids,
+        index=default_index,
+        format_func=lambda value: next(
+            f"#{r['id']}｜{r['week_start']} 當週"
+            for r in plans if r["id"] == value
+        ),
+    )
     record = next(r for r in plans if r["id"] == selected_id)
 
     action_col1, action_col2 = st.columns(2)
