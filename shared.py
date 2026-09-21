@@ -483,46 +483,16 @@ def render_account_sidebar():
                     opacity: 0;
                 }
                 </style>""", unsafe_allow_html=True)
-            if st.button("👤", key="plan_editor_profile_toggle", help="點擊頭像，更換個人照片"):
-                st.session_state["plan_editor_profile_open"] = not st.session_state.get("plan_editor_profile_open", False)
+            if st.button("👤", key="plan_editor_profile_toggle", help="點擊頭像，編輯個人資料（照片與名稱）"):
+                st.switch_page("pages/5_個人資料.py")
         with name_col:
             label = escape(str(current_user_label()), quote=True)
             st.markdown(f'<div class="lp-account-name" title="{label}">{label}</div>', unsafe_allow_html=True)
+        st.page_link("pages/5_個人資料.py", label="編輯個人資料", icon="👤", use_container_width=True)
         if st.button("登出", key="lp_account_logout", use_container_width=True):
             sign_out()
             st.rerun()
-    # Render outside the fixed account bar so the uploader stays in normal flow.
-    if st.session_state.get("plan_editor_profile_open", False):
-        with st.container(border=True):
-            st.subheader("更換個人照片")
-            photo_file = st.file_uploader("選擇 JPG 或 PNG（最多 5 MB）", type=["jpg", "jpeg", "png"], key="plan_editor_profile_upload")
-            if photo_file is not None:
-                try:
-                    preview = prepare_profile_photo(photo_file.getvalue())
-                    st.image(base64.b64decode(preview.split(",", 1)[1]), width=96)
-                except Exception as exc:
-                    st.error(f"無法讀取照片：{exc}")
-            if st.button("儲存照片", disabled=photo_file is None, key="plan_editor_profile_save"):
-                try:
-                    photo = prepare_profile_photo(photo_file.getvalue())
-                    client = get_supabase()
-                    if client is None or not is_logged_in():
-                        raise ValueError("請重新登入後再試。")
-                    response = client.auth.update_user({"data": {"profile_photo": photo}})
-                    if getattr(response, "user", None) is None:
-                        raise ValueError("未收到帳號更新結果，請重試。")
-                    _store_auth_response(response)
-                except Exception as exc:
-                    st.error(f"照片儲存失敗：{exc}")
-                else:
-                    st.session_state["plan_editor_profile_open"] = False
-                    st.session_state["plan_editor_profile_notice"] = True
-                    st.rerun()
-            if st.button("取消", key="plan_editor_profile_cancel"):
-                st.session_state["plan_editor_profile_open"] = False
-                st.rerun()
-    if st.session_state.pop("plan_editor_profile_notice", False):
-        st.success("個人照片已更新。")
+
 
 
 def prepare_profile_photo(data):
@@ -1575,3 +1545,82 @@ def render_week_calendar(plan_text, next_week_start):
         parts.append('</div>')
     parts.append('</section>')
     st.markdown("".join(parts), unsafe_allow_html=True)
+
+
+
+def save_profile(display_name, photo_data=None):
+    """Save only the profile fields being edited, preserving other metadata."""
+    name = display_name.strip()
+    if not name:
+        raise ValueError("請輸入顯示名稱。")
+    if len(name) > 50:
+        raise ValueError("顯示名稱最多 50 個字。")
+    data = {"display_name": name}
+    if photo_data is not None:
+        data["profile_photo"] = prepare_profile_photo(photo_data)
+    client = get_supabase()
+    if client is None or not is_logged_in():
+        raise ValueError("請重新登入後再試。")
+    response = client.auth.update_user({"data": data})
+    if getattr(response, "user", None) is None:
+        raise ValueError("未收到帳號更新結果，請重試。")
+    _store_auth_response(response)
+
+
+def render_profile_page():
+    st.title("個人資料")
+    st.caption("更換個人照片或修改顯示名稱，完成後按下「儲存變更」。")
+    prefix = "plan_editor_profile_" + current_user_id()
+    revision_key = prefix + "_revision"
+    if st.session_state.pop(prefix + "_notice", False):
+        st.success("個人資料已更新。")
+    revision = st.session_state.get(revision_key, 0)
+    with st.container(border=True):
+        photo_col, details_col = st.columns([1, 3])
+        with details_col:
+            name = st.text_input(
+                "顯示名稱", value=st.session_state.get("display_name", ""),
+                max_chars=50, key=f"{prefix}_name_{revision}",
+            )
+            st.caption("此名稱會顯示在側邊欄。")
+            photo_file = st.file_uploader(
+                "更換個人照片", type=["jpg", "jpeg", "png"],
+                help="支援 JPG、PNG，最多 5 MB。照片會自動裁切為正方形。",
+                key=f"{prefix}_upload_{revision}",
+            )
+        preview = st.session_state.get("profile_photo", "")
+        photo_data = None
+        invalid_photo = False
+        if photo_file is not None:
+            try:
+                photo_data = photo_file.getvalue()
+                preview = prepare_profile_photo(photo_data)
+            except Exception as exc:
+                invalid_photo = True
+                st.error(f"無法讀取照片：{exc}")
+        with photo_col:
+            st.markdown("**照片預覽**")
+            if isinstance(preview, str) and re.fullmatch(r"data:image/jpeg;base64,[A-Za-z0-9+/=]+", preview):
+                st.image(base64.b64decode(preview.split(",", 1)[1]), width=128)
+            else:
+                st.markdown("# 👤")
+            st.caption("未選擇新照片時，會保留目前照片。")
+        save_col, cancel_col = st.columns(2)
+        with save_col:
+            save = st.button("儲存變更", type="primary", disabled=invalid_photo,
+                             key=prefix + "_save", use_container_width=True)
+        with cancel_col:
+            cancel = st.button("取消並返回首頁", key=prefix + "_cancel", use_container_width=True)
+        if cancel:
+            st.session_state[revision_key] = revision + 1
+            st.switch_page("app.py")
+        if save:
+            try:
+                save_profile(name, photo_data)
+            except Exception as exc:
+                st.error(f"個人資料儲存失敗：{exc}")
+            else:
+                st.session_state[revision_key] = revision + 1
+                st.session_state[prefix + "_notice"] = True
+                st.rerun()
+    st.page_link("app.py", label="返回首頁", icon="🏠")
