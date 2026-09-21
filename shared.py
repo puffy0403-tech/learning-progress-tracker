@@ -488,7 +488,7 @@ def render_account_sidebar():
         with name_col:
             label = escape(str(current_user_label()), quote=True)
             st.markdown(f'<div class="lp-account-name" title="{label}">{label}</div>', unsafe_allow_html=True)
-        st.page_link("pages/5_個人資料.py", label="編輯個人資料", icon="👤", use_container_width=True)
+        st.page_link("pages/5_個人資料.py", label="編輯個人資料", use_container_width=True)
         if st.button("登出", key="lp_account_logout", use_container_width=True):
             sign_out()
             st.rerun()
@@ -1603,7 +1603,7 @@ def render_profile_page():
             if isinstance(preview, str) and re.fullmatch(r"data:image/jpeg;base64,[A-Za-z0-9+/=]+", preview):
                 st.image(base64.b64decode(preview.split(",", 1)[1]), width=128)
             else:
-                st.markdown("# ")
+                st.markdown("# 👤")
             st.caption("未選擇新照片時，會保留目前照片。")
         save_col, cancel_col = st.columns(2)
         with save_col:
@@ -1623,4 +1623,4 @@ def render_profile_page():
                 st.session_state[revision_key] = revision + 1
                 st.session_state[prefix + "_notice"] = True
                 st.rerun()
-    st.page_link("app.py", label="返回首頁", icon="")
+    st.page_link("app.py", label="返回首頁")
