@@ -1149,8 +1149,8 @@ def render_plan_editor(text, start, key, record=None, ask_latest=False):
     # 更新後雜湊改變，因此通知不能綁在 editor key 上。
     delete_notice_key = "plan_item_deleted_notice_" + current_user_id()
     if st.session_state.pop(delete_notice_key, False):
-        st.toast("學習項目刪除成功！", icon="✅")
-        st.success("學習項目刪除成功！")
+        st.toast("刪除成功", icon="✅")
+        st.success("刪除成功")
 
     editor_rows = []
     for row in rows:
@@ -1212,12 +1212,12 @@ def render_plan_editor(text, start, key, record=None, ask_latest=False):
                 st.session_state[key+"_latest_pending"] = saved["id"]
                 st.session_state.pop(key+"_latest_result", None)
                 if not deleted_count:
-                    st.toast("讀書計畫儲存成功！", icon="✅")
+                    st.toast("儲存成功", icon="✅")
                     st.success("新計畫已儲存。")
             else:
                 st.session_state["plan_draft_home_" + current_user_id()] = saved["id"]
                 if not deleted_count:
-                    st.toast("讀書計畫儲存成功！", icon="✅")
+                    st.toast("儲存成功", icon="✅")
                     st.success(
                         "計畫已儲存。回到首頁即可看到更新，"
                         "也可到『我的學習日曆』再次編輯。"
@@ -1299,7 +1299,7 @@ def render_learning_settings(goals, page_key, section=None, sidebar=True):
 
                 # 儲存成功後，在「儲存目標」按鈕正下方顯示綠色通知
                 if st.session_state.pop(goal_notice_key, False):
-                    st.success("✅ 學習目標設定成功！")
+                    st.success("設定成功")
 
         if section in (None, "紀錄今日學習"):
             with st.expander(" 記錄今日學習", expanded=True):
