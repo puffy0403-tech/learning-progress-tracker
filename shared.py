@@ -1087,8 +1087,8 @@ def serialize_editable_plan(rows, notes):
         subject = str(row.get("subject") or "").strip()
         if not subject or subject == "nan":
             raise ValueError(f"第 {i} 列：科目不可空白。")
-        if not math.isfinite(minutes) or not 0 < minutes <= 1440:
-            raise ValueError(f"第 {i} 列：分鐘須大於 0 且不超過 1440。")
+        if not math.isfinite(minutes) or not 0 <= minutes <= 1440:
+            raise ValueError(f"第 {i} 列：分鐘須大於等於 0 且不超過 1440。")
         cleaned.append(dict(date=day.isoformat(), subject=subject, minutes=minutes,
                             content=str(row.get("content") or "")))
     start = date.fromisoformat(min(r["date"] for r in cleaned))
@@ -1168,7 +1168,7 @@ def render_plan_editor(text, start, key, record=None, ask_latest=False):
                 "delete": st.column_config.CheckboxColumn("刪除", default=False),
                 "date": st.column_config.DateColumn("日期（星期依日期自動計算）", required=True),
                 "subject": st.column_config.TextColumn("科目 / 學習項目", required=True),
-                "minutes": st.column_config.NumberColumn("預計分鐘", min_value=1, max_value=1440, required=True),
+                "minutes": st.column_config.NumberColumn("預計分鐘", min_value=0, max_value=1440, required=True),
                 "content": st.column_config.TextColumn("學習內容"),
             })
         edited_notes = st.text_area("分析、建議與其他原始文字", notes, key=key+"_notes")
