@@ -1550,6 +1550,23 @@ def hide_streamlit_toolbar():
 def render_responsive_styles():
     st.markdown("""
     <style>
+    /* CookieController 僅負責背景登入狀態，不應占用版面高度。 */
+    [data-testid="stCustomComponentV1"]:has(iframe),
+    .stCustomComponentV1:has(iframe) {
+        display: none !important;
+        height: 0 !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+    }
+    [data-testid="stCustomComponentV1"] iframe,
+    .stCustomComponentV1 iframe {
+        display: none !important;
+        height: 0 !important;
+        min-height: 0 !important;
+    }
+
     .lp-mobile-calendar {display:none;}
     @media (max-width: 640px) {
         .st-key-desktop_calendar {display:none !important;}
