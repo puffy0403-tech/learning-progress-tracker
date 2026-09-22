@@ -8,6 +8,10 @@ render_brand_header()
 render_feature_title('我的學習日曆', 'calendar.png', daily_encouragement())
 render_home_link()
 
+# 刪除整週學習日曆後，在重新整理後顯示一次成功通知
+week_delete_notice_key = "week_calendar_deleted_notice_" + current_user_id()
+if st.session_state.pop(week_delete_notice_key, False):
+    st.success("學習日曆刪除成功！")
 
 try:
     plans = load_plans()
@@ -55,7 +59,7 @@ if plans:
                 try:
                     delete_plan(selected_id)
                     st.session_state.pop("confirm_delete_week_plan", None)
-                    st.success("已刪除這一週的學習日曆。")
+                    st.session_state[week_delete_notice_key] = True
                     st.rerun()
                 except Exception as exc:
                     st.error(f"刪除失敗：{exc}")
