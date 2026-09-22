@@ -714,8 +714,8 @@ def normalize_ai_display_text(text):
     return "".join(parts)
 
 
-def render_plan_day_cards(text):
-    """Frame consecutive daily schedule entries without changing stored text."""
+def render_plan_day_cards(text, week_start_date=None):
+    """Frame consecutive daily schedule entries and optionally show each day's date."""
     text = normalize_ai_display_text(text)
     day_pattern = re.compile(r"^\s*(?:[-*+•]\s+|\d+[.)]\s+)?(?:\*\*)?(?:週|星期)([一二三四五六日天])(?:\*\*)?\s*[：:]")
     segments = []
@@ -753,13 +753,19 @@ def render_plan_day_cards(text):
             continue
         if day:
             with st.container(border=True):
-                st.markdown(f"**{day}**")
+                day_title = day
+                if week_start_date is not None:
+                    day_index = {"週一": 0, "週二": 1, "週三": 2, "週四": 3, "週五": 4, "週六": 5, "週日": 6}.get(day)
+                    if day_index is not None:
+                        day_date = week_start_date + timedelta(days=day_index)
+                        day_title = f"{day}（{day_date:%m/%d}）"
+                st.markdown(f"**{day_title}**")
                 st.markdown(content)
         else:
             st.markdown(content)
 
 
-def render_ai_plan_text(plan_text):
+def render_ai_plan_text(plan_text, week_start_date=None):
     """Render AI sections with scoped protection against strikethrough."""
     st.markdown("""
     <style>
@@ -799,7 +805,7 @@ def render_ai_plan_text(plan_text):
         for kind, value in blocks:
             if kind == "text":
                 if value.strip():
-                    render_plan_day_cards(value)
+                    render_plan_day_cards(value, week_start_date)
             else:
                 icon_path = os.path.join(os.path.dirname(__file__), "assets", icon_map[value])
                 c1, c2 = st.columns([0.07, 0.93], vertical_alignment="center")
@@ -1087,8 +1093,8 @@ def serialize_editable_plan(rows, notes):
         subject = str(row.get("subject") or "").strip()
         if not subject or subject == "nan":
             raise ValueError(f"第 {i} 列：科目不可空白。")
-        if not math.isfinite(minutes) or not 0 <= minutes <= 1440:
-            raise ValueError(f"第 {i} 列：分鐘須大於等於 0 且不超過 1440。")
+        if not math.isfinite(minutes) or not 0 < minutes <= 1440:
+            raise ValueError(f"第 {i} 列：分鐘須大於 0 且不超過 1440。")
         cleaned.append(dict(date=day.isoformat(), subject=subject, minutes=minutes,
                             content=str(row.get("content") or "")))
     start = date.fromisoformat(min(r["date"] for r in cleaned))
@@ -1168,7 +1174,7 @@ def render_plan_editor(text, start, key, record=None, ask_latest=False):
                 "delete": st.column_config.CheckboxColumn("刪除", default=False),
                 "date": st.column_config.DateColumn("日期（星期依日期自動計算）", required=True),
                 "subject": st.column_config.TextColumn("科目 / 學習項目", required=True),
-                "minutes": st.column_config.NumberColumn("預計分鐘", min_value=0, max_value=1440, required=True),
+                "minutes": st.column_config.NumberColumn("預計分鐘", min_value=1, max_value=1440, required=True),
                 "content": st.column_config.TextColumn("學習內容"),
             })
         edited_notes = st.text_area("分析、建議與其他原始文字", notes, key=key+"_notes")
