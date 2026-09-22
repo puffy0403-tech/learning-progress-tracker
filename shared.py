@@ -1314,7 +1314,7 @@ def render_learning_settings(goals, page_key, section=None, sidebar=True):
                 # 新增成功後 rerun，並在「新增學習紀錄」區塊內顯示明顯的綠色成功通知
                 notice_key = prefix + "_log_added_notice"
                 if st.session_state.pop(notice_key, False):
-                    st.success("✅ 學習紀錄新增成功！")
+                    st.success(" 新增成功")
 
                 if st.button("新增學習紀錄", use_container_width=True):
                     subject_to_save = custom_subject.strip() if log_subject == "其他" else log_subject
