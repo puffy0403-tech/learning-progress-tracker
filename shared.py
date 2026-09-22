@@ -1311,10 +1311,10 @@ def render_learning_settings(goals, page_key, section=None, sidebar=True):
                 minutes = st.number_input("學習時間（分鐘）", min_value=1, max_value=1440, value=60, step=10, key=prefix + "_minutes")
                 note = st.text_area("學習內容", placeholder="例如：閱讀論文第二章、完成 Python 練習", key=prefix + "_note")
         
-                # rerun 後顯示一次成功通知，避免 toast 在重新整理前瞬間消失
+                # 新增成功後 rerun，並在「新增學習紀錄」區塊內顯示明顯的綠色成功通知
                 notice_key = prefix + "_log_added_notice"
                 if st.session_state.pop(notice_key, False):
-                    st.toast("學習紀錄新增成功！", icon="✅")
+                    st.success("✅ 學習紀錄新增成功！")
 
                 if st.button("新增學習紀錄", use_container_width=True):
                     subject_to_save = custom_subject.strip() if log_subject == "其他" else log_subject
