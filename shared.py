@@ -86,8 +86,10 @@ def _persist_auth_cookies(access_token, refresh_token):
     if controller is None:
         return
     try:
-        controller.set(_AUTH_ACCESS_COOKIE, str(access_token))
-        controller.set(_AUTH_REFRESH_COOKIE, str(refresh_token))
+        # Keep the Supabase session available across browser refreshes/reopens.
+        max_age = 7 * 24 * 60 * 60
+        controller.set(_AUTH_ACCESS_COOKIE, str(access_token), path="/", max_age=max_age, same_site="lax")
+        controller.set(_AUTH_REFRESH_COOKIE, str(refresh_token), path="/", max_age=max_age, same_site="lax")
     except Exception:
         pass
 
@@ -107,14 +109,27 @@ def restore_auth_from_cookies():
     """Restore Supabase session after browser reload before showing login UI."""
     if is_logged_in():
         return True
-    controller = _cookie_controller()
-    if controller is None:
-        return False
+
+    # On a real browser refresh, Streamlit exposes request cookies immediately.
+    # Prefer this over waiting for the third-party component to mount.
+    access_token = None
+    refresh_token = None
     try:
-        access_token = controller.get(_AUTH_ACCESS_COOKIE)
-        refresh_token = controller.get(_AUTH_REFRESH_COOKIE)
+        access_token = st.context.cookies.get(_AUTH_ACCESS_COOKIE)
+        refresh_token = st.context.cookies.get(_AUTH_REFRESH_COOKIE)
     except Exception:
-        return False
+        pass
+
+    # Fallback for older Streamlit versions / ordinary reruns.
+    if not access_token or not refresh_token:
+        controller = _cookie_controller()
+        if controller is not None:
+            try:
+                access_token = access_token or controller.get(_AUTH_ACCESS_COOKIE)
+                refresh_token = refresh_token or controller.get(_AUTH_REFRESH_COOKIE)
+            except Exception:
+                pass
+
     if not access_token or not refresh_token:
         return False
     client = _new_supabase_client()
@@ -377,6 +392,10 @@ def _render_auth_form(auth_slot):
 
 
 def login_required():
+    # Multipage refreshes enter the page script directly, so restore the
+    # Supabase session here too (not only from app.py/render_auth).
+    if not is_logged_in():
+        restore_auth_from_cookies()
     if not is_logged_in():
         st.warning(" 請先登入。")
         st.page_link("app.py", label="回到登入頁")
