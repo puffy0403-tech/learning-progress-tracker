@@ -4,3 +4,5 @@ plotly>=5.24
 google-genai>=1.0
 supabase>=2.0
 Pillow>=10.0
+
+streamlit-cookies-controller>=0.0.4
