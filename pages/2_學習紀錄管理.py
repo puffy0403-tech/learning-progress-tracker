@@ -11,7 +11,7 @@ render_home_link()
 edit_notice_key = "learning_log_edit_saved_notice_" + current_user_id()
 delete_notice_key = "learning_log_deleted_notice_" + current_user_id()
 if st.session_state.pop(edit_notice_key, False):
-    st.toast("學習紀錄修改成功！", icon="✅")
+    st.toast("修改成功！", icon="✅")
 delete_success = st.session_state.pop(delete_notice_key, False)
 
 section = st.session_state.get("plan_draft_records_section_" + current_user_id(), "查看學習紀錄/編輯")
@@ -24,7 +24,7 @@ else:
     if logs.empty:
         st.info("目前還沒有學習紀錄。可在左側「學習紀錄管理 → 紀錄今日學習」直接新增。")
         if delete_success:
-            st.success("✅ 學習紀錄刪除成功！")
+            st.success("刪除成功！")
     else:
         display_df = logs.copy()
         display_df["study_date"] = pd.to_datetime(display_df["study_date"]).dt.date
@@ -73,4 +73,4 @@ else:
                 st.session_state[delete_notice_key] = True
                 st.rerun()
             if delete_success:
-                st.success("✅ 學習紀錄刪除成功！")
+                st.success("刪除成功！")
