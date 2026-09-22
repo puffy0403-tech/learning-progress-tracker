@@ -24,16 +24,18 @@ if not logs.empty:
     tmp["study_date"] = pd.to_datetime(tmp["study_date"]).dt.date
     today_minutes = int(tmp.loc[tmp["study_date"] == today, "minutes"].sum())
 
-c1, c2, c3, c4 = st.columns(4)
+c1, c2 = st.columns(2)
 with c1:
     with st.container(border=True):
-        st.metric("今日學習（小時）", f"{today_minutes / 60:.1f}")
+        st.metric("今日學習", f"{today_minutes / 60:.1f} 小時")
 with c2:
     with st.container(border=True):
-        st.metric("本週累積（小時）", f"{weekly_study_hours:.1f}")
+        st.metric("本週累積", f"{weekly_study_hours:.1f} 小時")
+
+c3, c4 = st.columns(2)
 with c3:
     with st.container(border=True):
-        st.metric("本週目標（小時）", f"{weekly_goal_hours:.1f}")
+        st.metric("本週目標", f"{weekly_goal_hours:.1f} 小時")
 with c4:
     with st.container(border=True):
         st.metric("目標達成率", f"{goal_rate:.0f}%")
