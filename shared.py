@@ -144,14 +144,21 @@ def restore_auth_from_cookies():
         return False
 
 
-def _store_auth_response(response):
+def _store_auth_response(response, persist_cookies=False):
+    """Store Supabase auth in session_state.
+
+    Browser cookies are written only after an explicit sign-in/sign-up.
+    Re-writing them during every database request would mount repeated
+    CookieController components in the main page and distort the layout.
+    """
     session = getattr(response, "session", None)
     user = getattr(response, "user", None)
 
     if session is not None:
         st.session_state["sb_access_token"] = session.access_token
         st.session_state["sb_refresh_token"] = session.refresh_token
-        _persist_auth_cookies(session.access_token, session.refresh_token)
+        if persist_cookies:
+            _persist_auth_cookies(session.access_token, session.refresh_token)
 
     if user is not None:
         st.session_state["user_id"] = str(user.id)
@@ -219,7 +226,7 @@ def sign_up(email, password, display_name=""):
         payload["options"] = {"data": {"display_name": display_name.strip()}}
 
     response = client.auth.sign_up(payload)
-    _store_auth_response(response)
+    _store_auth_response(response, persist_cookies=True)
     return response
 
 
@@ -231,7 +238,7 @@ def sign_in(email, password):
     response = client.auth.sign_in_with_password(
         {"email": email.strip(), "password": password}
     )
-    _store_auth_response(response)
+    _store_auth_response(response, persist_cookies=True)
     return response
 
 
@@ -1550,23 +1557,6 @@ def hide_streamlit_toolbar():
 def render_responsive_styles():
     st.markdown("""
     <style>
-    /* CookieController 僅負責背景登入狀態，不應占用版面高度。 */
-    [data-testid="stCustomComponentV1"]:has(iframe),
-    .stCustomComponentV1:has(iframe) {
-        display: none !important;
-        height: 0 !important;
-        min-height: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        overflow: hidden !important;
-    }
-    [data-testid="stCustomComponentV1"] iframe,
-    .stCustomComponentV1 iframe {
-        display: none !important;
-        height: 0 !important;
-        min-height: 0 !important;
-    }
-
     .lp-mobile-calendar {display:none;}
     @media (max-width: 640px) {
         .st-key-desktop_calendar {display:none !important;}
