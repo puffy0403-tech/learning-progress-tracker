@@ -1191,6 +1191,11 @@ def render_plan_editor(text, start, key, record=None, ask_latest=False):
             use_container_width=True
         )
 
+    # 手動建立讀書計畫成功後，通知固定顯示在「儲存新計畫」按鈕下方。
+    manual_save_notice_key = key + "_manual_save_notice"
+    if record is None and st.session_state.pop(manual_save_notice_key, False):
+        st.success("讀書計畫建立成功！")
+
     if submitted:
         try:
             edited_records = edited.to_dict("records")
@@ -1218,6 +1223,7 @@ def render_plan_editor(text, start, key, record=None, ask_latest=False):
                 else:
                     saved = save_plan(new_start, content)
                 st.session_state[key+"_saved"] = saved
+                st.session_state[manual_save_notice_key] = True
 
             if deleted_count:
                 st.session_state[delete_notice_key] = True
@@ -1227,7 +1233,6 @@ def render_plan_editor(text, start, key, record=None, ask_latest=False):
                 st.session_state.pop(key+"_latest_result", None)
                 if not deleted_count:
                     st.toast("儲存成功", icon="✅")
-                    st.success("新計畫已儲存。")
             else:
                 st.session_state["plan_draft_home_" + current_user_id()] = saved["id"]
                 if not deleted_count:
@@ -1237,7 +1242,7 @@ def render_plan_editor(text, start, key, record=None, ask_latest=False):
                         "也可到『我的學習日曆』再次編輯。"
                     )
 
-            if record or deleted_count:
+            if record or deleted_count or record is None:
                 st.rerun()
 
         except Exception as exc:
