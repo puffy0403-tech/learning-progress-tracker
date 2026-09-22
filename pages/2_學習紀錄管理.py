@@ -12,8 +12,7 @@ edit_notice_key = "learning_log_edit_saved_notice_" + current_user_id()
 delete_notice_key = "learning_log_deleted_notice_" + current_user_id()
 if st.session_state.pop(edit_notice_key, False):
     st.toast("學習紀錄修改成功！", icon="✅")
-if st.session_state.pop(delete_notice_key, False):
-    st.success("✅ 學習紀錄刪除成功！")
+delete_success = st.session_state.pop(delete_notice_key, False)
 
 section = st.session_state.get("plan_draft_records_section_" + current_user_id(), "查看學習紀錄/編輯")
 if section in ("設定學習目標", "紀錄今日學習"):
@@ -24,6 +23,8 @@ else:
     
     if logs.empty:
         st.info("目前還沒有學習紀錄。可在左側「學習紀錄管理 → 紀錄今日學習」直接新增。")
+        if delete_success:
+            st.success("✅ 學習紀錄刪除成功！")
     else:
         display_df = logs.copy()
         display_df["study_date"] = pd.to_datetime(display_df["study_date"]).dt.date
@@ -65,9 +66,11 @@ else:
             else:
                 st.warning("科目不能留白。")
     
-        with st.expander(" 刪除這筆紀錄"):
+        with st.expander(" 刪除這筆紀錄", expanded=delete_success):
             confirm = st.checkbox("我確認要永久刪除這筆紀錄", key=f"confirm_delete_{selected_id}")
             if st.button("永久刪除", type="secondary", disabled=not confirm, use_container_width=True):
                 delete_log(selected_id)
                 st.session_state[delete_notice_key] = True
                 st.rerun()
+            if delete_success:
+                st.success("✅ 學習紀錄刪除成功！")
