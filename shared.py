@@ -14,11 +14,6 @@ import plotly.express as px
 import streamlit as st
 from PIL import Image
 
-try:
-    from streamlit_cookies_controller import CookieController
-except Exception:
-    CookieController = None
-
 # Optional Gemini support
 try:
     from google import genai
@@ -70,95 +65,13 @@ def _new_supabase_client():
     return create_client(_secret("SUPABASE_URL"), _secret("SUPABASE_KEY"))
 
 
-_AUTH_ACCESS_COOKIE = "learnpilot_sb_access"
-_AUTH_REFRESH_COOKIE = "learnpilot_sb_refresh"
-
-
-def _cookie_controller():
-    """Browser cookie storage so login survives a hard page refresh."""
-    if CookieController is None:
-        return None
-    return CookieController(key="learnpilot_auth_cookies")
-
-
-def _persist_auth_cookies(access_token, refresh_token):
-    controller = _cookie_controller()
-    if controller is None:
-        return
-    try:
-        # Keep the Supabase session available across browser refreshes/reopens.
-        max_age = 7 * 24 * 60 * 60
-        controller.set(_AUTH_ACCESS_COOKIE, str(access_token), path="/", max_age=max_age, same_site="lax")
-        controller.set(_AUTH_REFRESH_COOKIE, str(refresh_token), path="/", max_age=max_age, same_site="lax")
-    except Exception:
-        pass
-
-
-def _clear_auth_cookies():
-    controller = _cookie_controller()
-    if controller is None:
-        return
-    for name in (_AUTH_ACCESS_COOKIE, _AUTH_REFRESH_COOKIE):
-        try:
-            controller.remove(name)
-        except Exception:
-            pass
-
-
-def restore_auth_from_cookies():
-    """Restore Supabase session after browser reload before showing login UI."""
-    if is_logged_in():
-        return True
-
-    # On a real browser refresh, Streamlit exposes request cookies immediately.
-    # Prefer this over waiting for the third-party component to mount.
-    access_token = None
-    refresh_token = None
-    try:
-        access_token = st.context.cookies.get(_AUTH_ACCESS_COOKIE)
-        refresh_token = st.context.cookies.get(_AUTH_REFRESH_COOKIE)
-    except Exception:
-        pass
-
-    # Fallback for older Streamlit versions / ordinary reruns.
-    if not access_token or not refresh_token:
-        controller = _cookie_controller()
-        if controller is not None:
-            try:
-                access_token = access_token or controller.get(_AUTH_ACCESS_COOKIE)
-                refresh_token = refresh_token or controller.get(_AUTH_REFRESH_COOKIE)
-            except Exception:
-                pass
-
-    if not access_token or not refresh_token:
-        return False
-    client = _new_supabase_client()
-    if client is None:
-        return False
-    try:
-        response = client.auth.set_session(access_token, refresh_token)
-        _store_auth_response(response)
-        return is_logged_in()
-    except Exception:
-        _clear_auth_cookies()
-        return False
-
-
-def _store_auth_response(response, persist_cookies=False):
-    """Store Supabase auth in session_state.
-
-    Browser cookies are written only after an explicit sign-in/sign-up.
-    Re-writing them during every database request would mount repeated
-    CookieController components in the main page and distort the layout.
-    """
+def _store_auth_response(response):
     session = getattr(response, "session", None)
     user = getattr(response, "user", None)
 
     if session is not None:
         st.session_state["sb_access_token"] = session.access_token
         st.session_state["sb_refresh_token"] = session.refresh_token
-        if persist_cookies:
-            _persist_auth_cookies(session.access_token, session.refresh_token)
 
     if user is not None:
         st.session_state["user_id"] = str(user.id)
@@ -226,7 +139,7 @@ def sign_up(email, password, display_name=""):
         payload["options"] = {"data": {"display_name": display_name.strip()}}
 
     response = client.auth.sign_up(payload)
-    _store_auth_response(response, persist_cookies=True)
+    _store_auth_response(response)
     return response
 
 
@@ -238,12 +151,11 @@ def sign_in(email, password):
     response = client.auth.sign_in_with_password(
         {"email": email.strip(), "password": password}
     )
-    _store_auth_response(response, persist_cookies=True)
+    _store_auth_response(response)
     return response
 
 
 def sign_out():
-    _clear_auth_cookies()
     for key in list(st.session_state):
         if key.startswith("plan_editor_") or key.startswith("plan_draft_"):
             st.session_state.pop(key, None)
@@ -307,7 +219,6 @@ def render_brand_header(subtitle="", show_brand=None):
 def render_auth():
     """Keep login widgets in a disposable region, separate from account UI."""
     hide_streamlit_toolbar()
-    restore_auth_from_cookies()
     auth_slot = st.empty()
     if is_logged_in():
         auth_slot.empty()
@@ -399,10 +310,6 @@ def _render_auth_form(auth_slot):
 
 
 def login_required():
-    # Multipage refreshes enter the page script directly, so restore the
-    # Supabase session here too (not only from app.py/render_auth).
-    if not is_logged_in():
-        restore_auth_from_cookies()
     if not is_logged_in():
         st.warning(" 請先登入。")
         st.page_link("app.py", label="回到登入頁")
