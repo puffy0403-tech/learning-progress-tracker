@@ -1288,8 +1288,6 @@ def render_learning_settings(goals, page_key, section=None, sidebar=True):
                 target_date = st.date_input("目標日期", value=settings_today + timedelta(days=30), key=prefix + "_target_date")
         
                 goal_notice_key = prefix + "_goal_saved_notice"
-                if st.session_state.pop(goal_notice_key, False):
-                    st.toast("學習目標設定成功！", icon="✅")
 
                 if st.button("儲存目標", use_container_width=True):
                     if goal_subject.strip():
@@ -1298,6 +1296,10 @@ def render_learning_settings(goals, page_key, section=None, sidebar=True):
                         st.rerun()
                     else:
                         st.warning("請輸入學習主題")
+
+                # 儲存成功後，在「儲存目標」按鈕正下方顯示綠色通知
+                if st.session_state.pop(goal_notice_key, False):
+                    st.success("✅ 學習目標設定成功！")
 
         if section in (None, "紀錄今日學習"):
             with st.expander(" 記錄今日學習", expanded=True):
