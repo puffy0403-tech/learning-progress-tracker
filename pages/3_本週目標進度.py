@@ -19,13 +19,15 @@ weekly_study_hours = float(week_logs["minutes"].sum() / 60) if not week_logs.emp
 goal_rate = (weekly_study_hours / weekly_goal_hours * 100) if weekly_goal_hours > 0 else 0.0
 remaining_total = max(weekly_goal_hours - weekly_study_hours, 0)
 
-c1, c2, c3, c4 = st.columns(4)
+c1, c2 = st.columns(2)
 with c1:
     with st.container(border=True):
         st.metric("本週累積", f"{weekly_study_hours:.1f} 小時")
 with c2:
     with st.container(border=True):
         st.metric("本週目標", f"{weekly_goal_hours:.1f} 小時")
+
+c3, c4 = st.columns(2)
 with c3:
     with st.container(border=True):
         st.metric("目標達成率", f"{goal_rate:.0f}%")

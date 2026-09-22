@@ -9,8 +9,11 @@ render_feature_title('學習紀錄管理', 'study_record.png', daily_encourageme
 render_home_link()
 
 edit_notice_key = "learning_log_edit_saved_notice_" + current_user_id()
+delete_notice_key = "learning_log_deleted_notice_" + current_user_id()
 if st.session_state.pop(edit_notice_key, False):
     st.toast("學習紀錄修改成功！", icon="✅")
+if st.session_state.pop(delete_notice_key, False):
+    st.success("✅ 學習紀錄刪除成功！")
 
 section = st.session_state.get("plan_draft_records_section_" + current_user_id(), "查看學習紀錄/編輯")
 if section in ("設定學習目標", "紀錄今日學習"):
@@ -66,5 +69,5 @@ else:
             confirm = st.checkbox("我確認要永久刪除這筆紀錄", key=f"confirm_delete_{selected_id}")
             if st.button("永久刪除", type="secondary", disabled=not confirm, use_container_width=True):
                 delete_log(selected_id)
-                st.success("學習紀錄已刪除。")
+                st.session_state[delete_notice_key] = True
                 st.rerun()
